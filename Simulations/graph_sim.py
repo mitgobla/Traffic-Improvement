@@ -19,8 +19,8 @@ for index, item in enumerate(carsleft):
 for index, item in enumerate(carsright):
     carsright[index] = int(item)
 
-pylab.plot(t, carsleft)
-pylab.plot(t, carsright)
+pylab.step(t, carsleft)
+pylab.step(t, carsright)
 pylab.legend(['Left', 'Right'])
 pylab.xlabel('Time')
 pylab.ylabel('Cars')

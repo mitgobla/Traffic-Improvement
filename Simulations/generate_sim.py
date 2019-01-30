@@ -26,7 +26,8 @@ class TrafficLight(object):
             self.currentColourLeft = next(self.coloursleft)
             self.currentColourRight = next(self.coloursright)
             if self.currentColourLeft == 'red':
-                for car in range(20):
+                yield self.env.timeout(5)
+                for car in range(10):
                     try:
                         self.remove_car_right()
                     except IndexError:
@@ -34,14 +35,15 @@ class TrafficLight(object):
                         ##logging.info(str(self.env.now)+": No Cars Waiting")
                     logging.info(str(len(self.cars_left)))
                     logging.info(str(len(self.cars_right)))
-                    yield self.env.timeout(1)
+                    yield self.env.timeout(2)
             elif self.currentColourLeft == 'amber':
-                for waiting in range(2):
+                for waiting in range(4):
                     logging.info(str(len(self.cars_left)))
                     logging.info(str(len(self.cars_right)))
                     yield self.env.timeout(1)
             elif self.currentColourLeft == 'green':
-                for car in range(20):
+                yield self.env.timeout(5)
+                for car in range(10):
                     try:
                         self.remove_car_left()
                     except IndexError:
@@ -49,7 +51,7 @@ class TrafficLight(object):
                         ##logging.info(str(self.env.now)+": No Cars Waiting")
                     logging.info(str(len(self.cars_left)))
                     logging.info(str(len(self.cars_right)))
-                    yield self.env.timeout(1)
+                    yield self.env.timeout(2)
     
     def current_left(self):
         return self.currentColourLeft
@@ -103,7 +105,7 @@ class Environment(object):
         #     self.env.process(car.run())
         
         while True:
-            yield self.env.timeout(random.randint(1, 2))
+            yield self.env.timeout(random.randint(1, 10))
             i += 1
             car = Car(i, self.env, light)
             self.env.process(car.run())
@@ -112,5 +114,5 @@ random.seed()
 env = simpy.Environment()
 trafficEnvironment = Environment(env)
 #trafficEnvironment.setup()
-env.run(until=2000)
+env.run(until=8000)
 
