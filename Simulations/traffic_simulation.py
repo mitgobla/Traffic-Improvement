@@ -9,12 +9,14 @@ import random
 import itertools
 import logging
 
-logging.basicConfig(filename='Simulations//output.log', filemode='w', format='%(message)s', level=logging.DEBUG)
+logging.basicConfig(filename='Simulations//output.log',
+                    filemode='w', format='%(message)s', level=logging.DEBUG)
+
 
 class TrafficEnvironment(object):
 
     def __init__(self):
-        #C -> distanceFromA -> A                        B
+        # C -> distanceFromA -> A                        B
         #                      <- Distance between AB  -> <- distanceFromB <- C
 
         # --- Traffic Setup ---
@@ -29,30 +31,35 @@ class TrafficEnvironment(object):
         # Distance of car from right traffic light in metres
         self.distanceFromB = 4.0
         # Distance AB in metres
-        self.distanceAToB = 10.0
+        self.distanceAToB = 30.0
         # Width of road in metres
         self.roadWidth = 6.0
         # Speed limit inbetween AB (miles per hour)
-        self.speedLimit = 30
+        self.speedLimit = 20
 
         # --- Car Setup ---
         # Average Car Acceleration (metres per second squared)
         self.avgAcceleration = 3.5
 
+        # --- Other ---
+        self.environment = simpy.Environment()
+
     def calculate(self):
-        diagonalDistance = math.sqrt(self.distanceFromA**2+(self.roadWidth/2)**2)
-        timeToPerformCToA = math.sqrt((2*diagonalDistance)/self.avgAcceleration)
-        timeToPerformCToB = math.sqrt((2*self.distanceFromB)/self.avgAcceleration)
+        diagonalDistance = math.sqrt(
+            self.distanceFromA**2+(self.roadWidth/2)**2)
+        timeToPerformCToA = math.sqrt(
+            (2*diagonalDistance)/self.avgAcceleration)
+        timeToPerformCToB = math.sqrt(
+            (2*self.distanceFromB)/self.avgAcceleration)
 
-
-        #milePerHour = 0.44704 metres per second
+        # milePerHour = 0.44704 metres per second
         metresPerSecond = self.speedLimit*0.44704
 
         timeToPerformAToB = self.distanceAToB / metresPerSecond
-        
 
         self.timeToPerformLeft = 2*(timeToPerformCToA) + timeToPerformAToB
         self.timeToPerformRight = 2*(timeToPerformCToA) + timeToPerformAToB
+
 
 class TrafficLight(object):
     def __init__(self, name):
@@ -103,6 +110,25 @@ class Vehicle(object):
 
         self.setup()
 
+    def setup(self):
+        self.source = random.choice(self.traffic_system.trafficLights)
+        self.traffic_system.add_vehicle(self.source, self)
+        self.destination = self.source
+        while self.destination == self.source:
+            self.destination = random.choice(self.traffic_system.trafficLights)
+        print(self.source.name, "-> Car", self.name, "->", self.destination.name)
 
 TENV = TrafficEnvironment()
 TENV.calculate()
+
+TMGMT = TrafficLightManagement(TENV.environment)
+
+for i in range(2):
+    light = TrafficLight(str(i))
+    TMGMT.add_light(light)
+
+for i in range(10):
+    vehicle = Vehicle(i, TMGMT)
+
+TENV.environment.process(TMGMT.run())
+TENV.environment.run(until=5000)
