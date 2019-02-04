@@ -1,4 +1,4 @@
-"""Traffic Light Simulation 
+"""Traffic Light Simulation
 
 Author: Ben Dodd (mitgobla)
 """
@@ -8,10 +8,6 @@ import math
 import random
 import itertools
 import logging
-
-logging.basicConfig(filename='Simulations//output.log',
-                    filemode='w', format='%(message)s', level=logging.DEBUG)
-
 
 class TrafficEnvironment(object):
 
@@ -47,9 +43,9 @@ class TrafficEnvironment(object):
     def calculate(self):
         diagonalDistance = math.sqrt(
             self.distanceFromA**2+(self.roadWidth/2)**2)
-        timeToPerformCToA = math.sqrt(
+        self.timeToPerformCToA = math.sqrt(
             (2*diagonalDistance)/self.avgAcceleration)
-        timeToPerformCToB = math.sqrt(
+        self.timeToPerformCToB = math.sqrt(
             (2*self.distanceFromB)/self.avgAcceleration)
 
         # milePerHour = 0.44704 metres per second
@@ -57,125 +53,58 @@ class TrafficEnvironment(object):
 
         timeToPerformAToB = self.distanceAToB / metresPerSecond
 
-        self.timeToPerformLeft = 2*(timeToPerformCToA) + timeToPerformAToB
-        self.timeToPerformRight = 2*(timeToPerformCToA) + timeToPerformAToB
+        self.timeToPerformLeft = 2*(self.timeToPerformCToA) + timeToPerformAToB
+        self.timeToPerformRight = 2*(self.timeToPerformCToB) + timeToPerformAToB
 
 
 class TrafficLight(object):
-    def __init__(self, name):
-        self.colours = itertools.cycle(['red', 'amber1', 'green', 'amber2'])
-        self.currentColour = next(self.colours)
-        self.name = name
+    def __init__(self, tenv: TrafficEnvironment, identity, vector):
+        self.tenv = tenv
+        self.identity = identity
+        self.vector = vector
 
-    def next_colour(self):
-        self.currentColour = next(self.colours)
-        print("TrafficLight", self.name, 'is currently', self.currentColour)
+        self.states = itertools.cycle(['red', 'redamber', 'green', 'greenamber'])
+        self.currentState = next(self.states)
     
-    def current(self):
-        return self.currentColour
+    def change_state(self):
+        self.currentState = next(self.states)
+        print(self.identity, "light is now", self.currentState)
 
-
-class TrafficLightManagement(object):
+class TrafficManagment(object):
     def __init__(self, tenv: TrafficEnvironment):
-        self.env = tenv.environment
+        self.tenv = tenv
         self.trafficLights = []
-        self.vehicles = []
-
+        self.create_light(0, [0,0])
+        self.create_light(1, [15,0])
+    
+    def create_light(self, identity, vector):
+        self.trafficLights.append(TrafficLight(self.tenv, identity, vector))
+        print("Created Light:", identity, "at", vector)
+    
     def run(self):
-        while True:
-            for light in self.trafficLights:
-                # Light is Red
-                yield self.env.timeout(10)  # Stay red for 10 seconds
-                light.next_colour()
-                yield self.env.timeout(5)  # Stay amber1 for 5 seconds
-                light.next_colour()
-                for vehicle in self.vehicles[self.trafficLights.index(light)]:
-                    vehicle.run()
-                yield self.env.timeout(10)  # Stay green for 10 seconds
-                light.next_colour()
-                yield self.env.timeout(5)  # Stay amber2 for 5 seconds
-                light.next_colour()
-                yield self.env.timeout(5)  # All lights stay red for 5 seconds
+        for light in self.trafficLights:
+            anyTransit = True
+            while anyTransit:
+                for vehicles                             
+            yield self.tenv.environment.timeout(5)
+            light.change_state()
+            yield self.tenv.environment.timeout(5)
+            light.change_state()
+            yield self.tenv.environment.timeout(5)
+            light.change_state()
+            yield self.tenv.environment.timeout(5)
+            light.change_state()
 
-    def add_light(self, traffic_light: TrafficLight):
-        self.trafficLights.append(traffic_light)
-        self.vehicles.append(list())
-    
-    def add_vehicle(self, light, vehicle):
-        self.vehicles[self.trafficLights.index(light)].append(vehicle)
-        # print(self.vehicles[self.trafficLights.index(light)])
-    
-    def remove_vehicle(self, light, vehicle):
-        self.vehicles[self.trafficLights.index(light)][self.trafficLights.index(light).index(vehicle)]
 
-class Vehicle(object):
-
-    def __init__(self, tenv: TrafficEnvironment, name, traffic_system: TrafficLightManagement):
+class Controller(object):
+    def __init__(self, tenv: TrafficEnvironment):
+        self.tmgmt = TrafficManagment(tenv)    
         self.tenv = tenv
-        self.traffic_system = traffic_system
-        self.name = name
-        self.source = None
-        self.destination = None
-
-        #self.setup()
-
-    def setup(self, source):
-        self.source = self.traffic_system.trafficLights[source] # random.choice(self.traffic_system.trafficLights)
-        self.traffic_system.add_vehicle(self.source, self)
-        self.destination = self.source
-        while self.destination == self.source:
-            self.destination = random.choice(self.traffic_system.trafficLights)
-        print(self.source.name, "-> Car", self.name, "->", self.destination.name)
     
     def run(self):
-        print("Car", self.name, "leaving", self.source.name)
-        if self.traffic_system.trafficLights.index(self.source) == 0:
-            yield self.tenv.environment.timeout(self.tenv.timeToPerformLeft)
-        else:
-            yield self.tenv.environment.timeout(self.tenv.timeToPerformRight)
-        print("Car", self.name, "arrived", self.destination.name)
-        self.traffic_system.remove_vehicle(self.source, self)
-
-class TrafficVehicleManagement(object):
-
-    def __init__(self, tenv: TrafficEnvironment, tmgmt: TrafficLightManagement):
-        self.tenv = tenv
-        self.tmgmt = tmgmt
-    
-    def run(self):
-        i = 0
-        while True:
-            vehicleLeft = random.random() < self.tenv.probabilityLeft
-            vehicleRight = random.random() < self.tenv.probabilityRight
-
-            if vehicleLeft:
-                vehiclenext = Vehicle(self.tenv, "L"+str(i), self.tmgmt)
-                vehiclenext.setup(0)
-                yield self.tenv.environment.process(vehiclenext.run())
-
-            if vehicleRight:
-                vehiclenext = Vehicle(self.tenv, "R"+str(i), self.tmgmt)
-                vehiclenext.setup(1)
-                yield self.tenv.environment.process(vehiclenext.run())
-                
-
-            yield self.tenv.environment.timeout(1)
-            i += 1
-
+        self.tenv.environment.process(self.tmgmt.run())
+        self.tenv.environment.run(until=100)
 
 TENV = TrafficEnvironment()
-TENV.calculate()
-
-TMGMT = TrafficLightManagement(TENV)
-TVMGMT = TrafficVehicleManagement(TENV, TMGMT)
-
-for i in range(2):
-    light = TrafficLight(str(i))
-    TMGMT.add_light(light)
-
-# for i in range(10):
-#     vehicle = Vehicle(i, TMGMT)
-
-TENV.environment.process(TMGMT.run())
-TENV.environment.process(TVMGMT.run())
-TENV.environment.run(until=300)
+CTRL = Controller(TENV)
+CTRL.run()
