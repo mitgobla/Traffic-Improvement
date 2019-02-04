@@ -21,9 +21,9 @@ class TrafficEnvironment(object):
 
         # --- Traffic Setup ---
         # Probability a car appears from the left every second
-        self.probabilityLeft = 0.5
+        self.probabilityLeft = 0.05
         # Probability a car appears from the right every second
-        self.probabilityRight = 0.5
+        self.probabilityRight = 0.05
 
         # --- Traffic Lights Setup ---
         # Distance of car from left traffic light in metres
@@ -70,11 +70,14 @@ class TrafficLight(object):
     def next_colour(self):
         self.currentColour = next(self.colours)
         print("TrafficLight", self.name, 'is currently', self.currentColour)
+    
+    def current(self):
+        return self.currentColour
 
 
 class TrafficLightManagement(object):
-    def __init__(self, env: simpy.Environment):
-        self.env = env
+    def __init__(self, tenv: TrafficEnvironment):
+        self.env = tenv.environment
         self.trafficLights = []
         self.vehicles = []
 
@@ -86,6 +89,8 @@ class TrafficLightManagement(object):
                 light.next_colour()
                 yield self.env.timeout(5)  # Stay amber1 for 5 seconds
                 light.next_colour()
+                for vehicle in self.vehicles[self.trafficLights.index(light)]:
+                    vehicle.run()
                 yield self.env.timeout(10)  # Stay green for 10 seconds
                 light.next_colour()
                 yield self.env.timeout(5)  # Stay amber2 for 5 seconds
@@ -98,37 +103,79 @@ class TrafficLightManagement(object):
     
     def add_vehicle(self, light, vehicle):
         self.vehicles[self.trafficLights.index(light)].append(vehicle)
-
+        # print(self.vehicles[self.trafficLights.index(light)])
+    
+    def remove_vehicle(self, light, vehicle):
+        self.vehicles[self.trafficLights.index(light)][self.trafficLights.index(light).index(vehicle)]
 
 class Vehicle(object):
 
-    def __init__(self, name, traffic_system: TrafficLightManagement):
+    def __init__(self, tenv: TrafficEnvironment, name, traffic_system: TrafficLightManagement):
+        self.tenv = tenv
         self.traffic_system = traffic_system
         self.name = name
         self.source = None
         self.destination = None
 
-        self.setup()
+        #self.setup()
 
-    def setup(self):
-        self.source = random.choice(self.traffic_system.trafficLights)
+    def setup(self, source):
+        self.source = self.traffic_system.trafficLights[source] # random.choice(self.traffic_system.trafficLights)
         self.traffic_system.add_vehicle(self.source, self)
         self.destination = self.source
         while self.destination == self.source:
             self.destination = random.choice(self.traffic_system.trafficLights)
         print(self.source.name, "-> Car", self.name, "->", self.destination.name)
+    
+    def run(self):
+        print("Car", self.name, "leaving", self.source.name)
+        if self.traffic_system.trafficLights.index(self.source) == 0:
+            yield self.tenv.environment.timeout(self.tenv.timeToPerformLeft)
+        else:
+            yield self.tenv.environment.timeout(self.tenv.timeToPerformRight)
+        print("Car", self.name, "arrived", self.destination.name)
+        self.traffic_system.remove_vehicle(self.source, self)
+
+class TrafficVehicleManagement(object):
+
+    def __init__(self, tenv: TrafficEnvironment, tmgmt: TrafficLightManagement):
+        self.tenv = tenv
+        self.tmgmt = tmgmt
+    
+    def run(self):
+        i = 0
+        while True:
+            vehicleLeft = random.random() < self.tenv.probabilityLeft
+            vehicleRight = random.random() < self.tenv.probabilityRight
+
+            if vehicleLeft:
+                vehiclenext = Vehicle(self.tenv, "L"+str(i), self.tmgmt)
+                vehiclenext.setup(0)
+                yield self.tenv.environment.process(vehiclenext.run())
+
+            if vehicleRight:
+                vehiclenext = Vehicle(self.tenv, "R"+str(i), self.tmgmt)
+                vehiclenext.setup(1)
+                yield self.tenv.environment.process(vehiclenext.run())
+                
+
+            yield self.tenv.environment.timeout(1)
+            i += 1
+
 
 TENV = TrafficEnvironment()
 TENV.calculate()
 
-TMGMT = TrafficLightManagement(TENV.environment)
+TMGMT = TrafficLightManagement(TENV)
+TVMGMT = TrafficVehicleManagement(TENV, TMGMT)
 
 for i in range(2):
     light = TrafficLight(str(i))
     TMGMT.add_light(light)
 
-for i in range(10):
-    vehicle = Vehicle(i, TMGMT)
+# for i in range(10):
+#     vehicle = Vehicle(i, TMGMT)
 
 TENV.environment.process(TMGMT.run())
-TENV.environment.run(until=5000)
+TENV.environment.process(TVMGMT.run())
+TENV.environment.run(until=300)

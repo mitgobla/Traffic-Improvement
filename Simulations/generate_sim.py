@@ -23,8 +23,8 @@ class TrafficLight(object):
     def cycle_light(self):
         while True:
             #logging.info(str(self.env.now)+" Light "+self.currentColour)
-            self.currentColourLeft = next(self.coloursleft)
-            self.currentColourRight = next(self.coloursright)
+            self.currentColourLeft = next(self.coloursleft, "red")
+            self.currentColourRight = next(self.coloursright, "red")
             if self.currentColourLeft == 'red':
                 yield self.env.timeout(5)
                 for car in range(10):
@@ -113,6 +113,5 @@ class Environment(object):
 random.seed()
 env = simpy.Environment()
 trafficEnvironment = Environment(env)
-#trafficEnvironment.setup()
 env.run(until=8000)
 
