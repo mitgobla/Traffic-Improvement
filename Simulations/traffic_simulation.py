@@ -3,11 +3,14 @@
 Author: Ben Dodd (mitgobla)
 """
 
+
+
 import simpy
 import math
 import random
 import itertools
 import logging
+import threading
 import numpy
 
 class TrafficEnvironment(object):
@@ -26,6 +29,7 @@ class TrafficEnvironment(object):
         # Probability a car appears from the right every second
         # self.probabilityRight = 0.05
         self.probabilityOfCar = 0.05
+        self.timeTillNextCar = 1                
 
         # --- Traffic Lights Setup ---
         # Distance of car from left traffic light in metres
@@ -65,7 +69,11 @@ class TrafficLight(object):
         self.tenv = tenv
         self.identity = identity
         self.vector = vector
+        self.carsAtLight = []
 
+
+
+        # self.states = itertools.cycle(['red', 'redamber', 'green', 'greenamber'])
         self.states = itertools.cycle(['red', 'redamber', 'green', 'greenamber'])
         self.currentState = next(self.states)
     
@@ -101,18 +109,14 @@ class TrafficManagment(object):
         while True:
             if random.random() < self.tenv.probabilityOfCar:
                 location = random.choice(self.trafficLights)
-                position = 0
-                for vehicle in self.vehicles:
-                    if vehicle.location == location:
-                        if position <= vehicle.position:
-                            position = vehicle.position + 1
+                position = len(location.carsAtLight)
                 self.vehicles.append(Vehicle(self.tenv, self, len(self.vehicles), location, position))
-            yield self.tenv.environment.timeout(1)
+            yield self.tenv.environment.timeout(self.tenv.timeTillNextCar)
 
     def cycle_light_states(self):
         while True:
             for light in self.trafficLights:
-                while self.intransit_scan():
+                while self.carsInTransit:
                     pass
                 yield self.tenv.environment.timeout(5)
                 light.change_state() # Go redamber
@@ -123,15 +127,14 @@ class TrafficManagment(object):
                 yield self.tenv.environment.timeout(5)
                 light.change_state() # Go Red
     
-    def intransit_scan(self):
-        self.carsInTransit = []
-        for vehicle in self.vehicles:
-            if vehicle.location == -1:
-                self.carsInTransit.append(vehicle)
-            else:
-                if vehicle in self.carsInTransit:
-                    self.carsInTransit.pop(self.carsInTransit.index(vehicle))
-        return self.carsInTransit
+    # def intransit_scan(self):
+    #     while True:
+    #         for vehicle in self.vehicles:
+    #             if vehicle.location == -1:
+    #                 self.carsInTransit.append(vehicle)
+    #             else:
+    #                 if vehicle in self.carsInTransit:
+    #                     self.carsInTransit.pop(self.carsInTransit.index(vehicle))
 
 class Vehicle(object):
     def __init__(self, tenv: TrafficEnvironment, tmgmt: TrafficManagment, identity, location, position):
@@ -141,13 +144,16 @@ class Vehicle(object):
         self.location = location
         self.position = position
 
+        self.location.carsAtLight.append(self)
+
         print("Created vehicle", identity, "at", location.identity, "in position", position)
         self.humanReaction = round(random.uniform(self.tenv.humanReactionTime[0], self.tenv.humanReactionTime[1]), 2)
         self.humanAcceleration = random.uniform(self.tenv.avgAcceleration[0], self.tenv.avgAcceleration[1])
         self.selfRainSpeedReduction = random.randint(self.tenv.rainSpeedReduction[0], self.tenv.rainSpeedReduction[1])
 
         self.calculate()
-        
+        self.tenv.environment.process(self.run())
+
     def calculate(self):
         if self.tenv.raining:
             self.tenv.speedLimit -= self.selfRainSpeedReduction
@@ -161,38 +167,48 @@ class Vehicle(object):
         if random.random() < self.tenv.humanDistractionChance:
             self.timeToPerformCToT += self.tenv.humanDistractionDelay
 
+    def check_light(self):
+        while self.location.currentState == "green":
+            pass
+        return True
+
     def run(self):
         while True:
             if self.position == 0:
-                if self.location.currentState == "green":
-                    self.transit()
+                if self.check_light():
+                    self.tenv.environment.process(self.transit())
+                break
             elif self.position > 0:
-                tempVehiclePos = []
-                for vehicle in self.tmgmt.vehicles:
-                    if vehicle.location == self.location:
-                        tempVehiclePos.append(vehicle.position)
-                if (self.location - 1) in tempVehiclePos:
-                    self.move_in_queue()
-                        
+                if self.location.carsAtLight.index(self) != self.position:
+                    self.tenv.environment.process(self.move_in_queue())
+                
 
     def transit(self):
-        yield self.tenv.environment.timeout(self.timeToPerformCToT)
-        self.location = -1
-        self.position = 0
-        if self.tmgmt.carsInTransit:
-            self.position = len(self.tmgmt.intransit_scan) - 1
-        print("Vehicle", self.identity, "is in transit")
-        yield self.tenv.environment.timeout(self.timeToPerformTransit)
-        self.location = -2
-        self.position = -1
-        print("Vehicle", self.identity, "is out of transit")
+        inTransit = True
+        while inTransit:
+            yield self.tenv.environment.timeout(self.timeToPerformCToT)
+            self.location = -1
+            self.position = 0
+            if self.tmgmt.carsInTransit:
+                self.position = len(self.tmgmt.carsInTransit) - 1
+            self.tmgmt.carsInTransit.append(self)
+            print("Vehicle", self.identity, "is in transit")
+            yield self.tenv.environment.timeout(self.timeToPerformTransit)
+            self.location = -2
+            self.position = -1
+            self.tmgmt.carsInTransit.pop(self.tmgmt.carsInTransit.index(self))
+            print("Vehicle", self.identity, "is out of transit")
+            inTransit = False
 
 
     def move_in_queue(self):
-        yield self.tenv.environment.timeout(self.humanReaction)
-        yield self.tenv.environment.timeout(self.timeToPerformCToT)
-        self.position -= self.position
-        print("Vehicle", self.identity, "has moved position in queue at", self.location.identity)
+        movingInQueue = True
+        while movingInQueue:
+            yield self.tenv.environment.timeout(self.humanReaction)
+            yield self.tenv.environment.timeout(self.timeToPerformCToT)
+            self.position = self.location.carsAtLight.index(self)
+            print("Vehicle", self.identity, "has moved position in queue at", self.location.identity)
+            movingInQueue = False
 
 
 class Controller(object):
@@ -204,12 +220,29 @@ class Controller(object):
         self.tmgmt.create_light(0, [0,0])
         self.tmgmt.create_light(1, [15,0])
         # self.tmgmt.vehicle_creation(20)
-        self.tmgmt.vehicle_creation(10)
+        # self.tmgmt.vehicle_creation(10)
         self.tenv.environment.process(self.tmgmt.generate_cars())
-        # self.tenv.environment.event(self.tmgmt.intransit_scan())
+        # self.tenv.environment.process(self.tmgmt.intransit_scan())
         self.tenv.environment.process(self.tmgmt.cycle_light_states())
+        # self.tenv.environment.event(self.run_processes())
+        # self.run_processes()
         self.tenv.environment.run(until=200)
 
+    # def run_processes(self):
+    #     thread_gencars = threading.Thread(target=self.tmgmt.generate_cars)
+    #     thread_gencars.start()
+    #     thread_transitscan = threading.Thread(target=self.tmgmt.intransit_scan)
+    #     thread_transitscan.start()
+    #     thread_cyclelightstates = threading.Thread(target=self.tmgmt.cycle_light_states)
+    #     thread_cyclelightstates.start()
+        
 TENV = TrafficEnvironment()
 CTRL = Controller(TENV)
 CTRL.run()
+
+
+# IF I RUN THIS, IT DOESN'T CREATE ANY CARS
+# I will look at the documentation
+# I know what yeild actually does now. 
+# It is kind of a wait function that waits for whatever it is yielding to finish before continuing where the yield is.
+# So we should only need it for "timeouts"
