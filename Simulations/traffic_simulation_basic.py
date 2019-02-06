@@ -38,17 +38,17 @@ class TrafficEnvironment:
         self.lightsList.append(TrafficLight(self, "A"))
         self.lightsList.append(TrafficLight(self, "B"))
         
-        # self.vehiclesList.append(Vehicle(self, "2", self.lightsList[1]))
-        # self.vehiclesList.append(Vehicle(self, "3", self.lightsList[0]))
-        # self.vehiclesList.append(Vehicle(self, "4", self.lightsList[1]))
-        # self.vehiclesList.append(Vehicle(self, "5", self.lightsList[0]))
-        # self.vehiclesList.append(Vehicle(self, "6", self.lightsList[1]))
-        # self.vehiclesList.append(Vehicle(self, "7", self.lightsList[0]))
-        # self.vehiclesList.append(Vehicle(self, "8", self.lightsList[1]))
-        # self.vehiclesList.append(Vehicle(self, "9", self.lightsList[0]))
-        # self.vehiclesList.append(Vehicle(self, "10", self.lightsList[1]))
-        # self.vehiclesList.append(Vehicle(self, "11", self.lightsList[0]))
-        # self.vehiclesList.append(Vehicle(self, "12", self.lightsList[1]))
+        self.vehiclesList.append(Vehicle(self, "2", self.lightsList[1]))
+        self.vehiclesList.append(Vehicle(self, "3", self.lightsList[0]))
+        self.vehiclesList.append(Vehicle(self, "4", self.lightsList[1]))
+        self.vehiclesList.append(Vehicle(self, "5", self.lightsList[0]))
+        self.vehiclesList.append(Vehicle(self, "6", self.lightsList[1]))
+        self.vehiclesList.append(Vehicle(self, "7", self.lightsList[0]))
+        self.vehiclesList.append(Vehicle(self, "8", self.lightsList[1]))
+        self.vehiclesList.append(Vehicle(self, "9", self.lightsList[0]))
+        self.vehiclesList.append(Vehicle(self, "10", self.lightsList[1]))
+        self.vehiclesList.append(Vehicle(self, "11", self.lightsList[0]))
+        self.vehiclesList.append(Vehicle(self, "12", self.lightsList[1]))
         self.roadBetweenLight = RoadBetweenLights(self)
 
         self.tmgmt = TrafficManagment(self)
@@ -57,11 +57,15 @@ class TrafficEnvironment:
         self.environment.run(until=50)
     
     def generate_vehicles(self):
+        # while True:
+        #     if np.random.choice([True, False], p=[self.probabiliyAddingCarPerTimeDelay, 1-self.probabiliyAddingCarPerTimeDelay]):
+        #         numVehicles = len(self.vehiclesList)
+        #         self.vehiclesList.append(Vehicle(self, str(numVehicles), self.lightsList[random.randint(0, 1)]))
+        #         yield self.environment.timeout(self.timeDelayAddingCars)
+        i = len(self.vehiclesList)
         while True:
-            if np.random.choice([True, False], p=[self.probabiliyAddingCarPerTimeDelay, 1-self.probabiliyAddingCarPerTimeDelay]):
-                numVehicles = len(self.vehiclesList)
-                self.vehiclesList.append(Vehicle(self, str(numVehicles), self.lightsList[random.randint(0, 1)]))
-                yield self.environment.timeout(self.timeDelayAddingCars)
+            yield self.environment.timeout(random.randint(0,3))
+            self.vehiclesList.append(Vehicle(self, str(i), self.lightsList[random.randint(0, 1)]))
 
 class TrafficManagment:
     def __init__(self, tenv):
@@ -177,7 +181,11 @@ class TrafficLight(object):
             self.lightRedEvent.succeed()
             self.lightGreenEvent = self.tenv.environment.event()
         print(self.tenv.environment.now, ":","Traffic Light Changed --> Identity:", self.identity, "; State:", self.currentState)
-
+    
+    def travel_up_queue_list_update(self, vehicle):
+        
+    def travel_betweenLights_list_update(self, vehicle):
+        
 class RoadBetweenLights(object):
     def __init__(self, tenv):
         self.tenv = tenv
