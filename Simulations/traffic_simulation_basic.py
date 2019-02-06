@@ -9,7 +9,23 @@ import itertools
 import random
 import numpy as np
 
-class TrafficEnvironment:
+class Queue(object):
+    def __init__(self):
+        self.queueList = []
+        
+    def enque(self, item):
+        self.queueList.append(self)
+    
+    def get(self, delete=True):
+        item = self.queueList[0]
+        if delete == True:
+            self.queueList.pop[0]
+        return item
+
+    def deque(self, item):
+        self.queueList.pop[self.queueList.index(item)]
+
+class TrafficEnvironment(object):
     def __init__(self):
         """Configuration for environment
         """
@@ -52,7 +68,7 @@ class TrafficEnvironment:
         self.roadBetweenLight = RoadBetweenLights(self)
 
         self.tmgmt = TrafficManagment(self)
-        self.environment.process(self.generate_vehicles())
+        # self.environment.process(self.generate_vehicles())
 
         self.environment.run(until=50)
     
@@ -114,7 +130,6 @@ class Vehicle:
 
     def run(self):
         # while True:
-        print(self.identity, self.location.vehiclesAtLight)
         if self.location.vehiclesAtLight.index(self) == 0:
             yield self.location.lightGreenEvent
             print(self.tenv.environment.now, ":","Traffic Light is --> State:", self.location.currentState, "; For Vehicle:", self.identity)
@@ -125,8 +140,8 @@ class Vehicle:
             carInFront = self.location.vehiclesAtLight[self.location.vehiclesAtLight.index(self) -1]
             yield carInFront.moved
             yield self.tenv.environment.process(self.travel_up_queue())
-        elif self.location.vehiclesAtLight[self.location.vehiclesAtLight.index(self) -1] == 'empty':
-            yield self.tenv.environment.process(self.travel_up_queue())
+        # elif self.location.vehiclesAtLight[self.location.vehiclesAtLight.index(self) -1] == 'empty':
+        #     yield self.tenv.environment.process(self.travel_up_queue())
 
 
     def travel_between_lights(self):
@@ -141,12 +156,9 @@ class Vehicle:
         self.tenv.roadBetweenLight.remove_vehicle(self)
 
     def travel_up_queue(self):
-        oldPos = self.location.vehiclesAtLight.index(self)
-        self.location.vehiclesAtLight[oldPos - 1] = self
-        if oldPos != len(self.location.vehiclesAtLight) - 1:
-            self.location.vehiclesAtLight[oldPos] = 'empty'
-        else:
-            self.location.vehiclesAtLight.pop(oldPos)
+        self.location.vehicleTravelUpQueueQueue.enque(self)
+        if self.location.vehicleTravelUpQueueQueueEvent.processed:
+            self.location.vehicleTravelUpQueueQueueEvent.succeed()
         # if self.location.vehiclesAtLight[-1] == 'empty':
         #     self.location.vehiclesAtLight.pop(-1)
         # self.location.vehiclesAtLight[self.location.vehiclesAtLight.index(self)] = 'empty'
@@ -167,6 +179,10 @@ class TrafficLight(object):
         self.vehiclesAtLight = []
         self.states = itertools.cycle(['red', 'redamber', 'green', 'greenamber'])
         self.currentState = next(self.states)
+        self.vehicleTravelUpQueueQueue = Queue()
+        self.vehicleTravelUpQueueQueueEvent = self.tenv.environment.event()
+        self.vehicleTravelBetweenLightsQueue = Queue()
+        self.vehicleTravelBetweenLightsQueueEvent = self.tenv.environment.event()
 
         self.lightGreenEvent = self.tenv.environment.event()
         self.lightRedEvent = self.tenv.environment.event()
@@ -182,9 +198,20 @@ class TrafficLight(object):
             self.lightGreenEvent = self.tenv.environment.event()
         print(self.tenv.environment.now, ":","Traffic Light Changed --> Identity:", self.identity, "; State:", self.currentState)
     
-    def travel_up_queue_list_update(self, vehicle):
-        
+    def travel_up_queue_list_update(self):
+        while True:
+            yield self.vehicleTravelUpQueueQueueEvent
+            vehicle = self.vehicleTravelUpQueueQueue.get()
+            oldPos = self.vehiclesAtLight.index(vehicle)
+            self.vehiclesAtLight[oldPos - 1] = vehicle
+            if oldPos != len(self.vehiclesAtLight) - 1:
+                self.vehiclesAtLight[oldPos] = 'empty'
+            else:
+                self.vehiclesAtLight.pop(oldPos)
+
     def travel_betweenLights_list_update(self, vehicle):
+        while True:
+            yield self.vehicleTravelBetweenLightsQueueEvent
         
 class RoadBetweenLights(object):
     def __init__(self, tenv):
