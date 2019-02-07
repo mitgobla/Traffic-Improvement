@@ -19,11 +19,11 @@ class Queue(object):
     def get(self, delete=True):
         item = self.queueList[0]
         if delete == True:
-            self.queueList.pop[0]
+            self.queueList.pop(0)
         return item
 
     def deque(self, item):
-        self.queueList.pop[self.queueList.index(item)]
+        self.queueList.pop(self.queueList.index(item))
 
 class TrafficEnvironment(object):
     def __init__(self):
@@ -32,13 +32,14 @@ class TrafficEnvironment(object):
 
 
 
-        self.timeFromAToB = 15   # Time to traverse from Light 'A' to Light 'B'.
+        self.timeFromAToB = 4   # Time to traverse from Light 'A' to Light 'B'.
         self.timeToMoveUpQueue = 0.5 
+        self.humanReactionTime = 0.2
         self.numVehiclesA = 1    # Setting number of vehicles that will start on Light 'A'.
         self.numVehiclesB = 1    # Setting number of vehicles that will start on Light 'B'.
-        self.timeDelayAddingCars = 1
-        self.probabiliyAddingCarPerTimeDelay = 0.001
-        self.trafficLightCarGenerateWeighting = [0.4,0.6]
+        self.timeDelayAddingVehicles = 1
+        self.probabiliyNewVehiclePerUnitTime = 0.001
+        self.trafficLightVehicleGenerateWeighting = [0.4,0.6]
 
 
         # --- Other ---
@@ -53,35 +54,27 @@ class TrafficEnvironment(object):
 
         self.lightsList.append(TrafficLight(self, "A"))
         self.lightsList.append(TrafficLight(self, "B"))
-        
-        self.vehiclesList.append(Vehicle(self, "2", self.lightsList[1]))
-        self.vehiclesList.append(Vehicle(self, "3", self.lightsList[0]))
-        self.vehiclesList.append(Vehicle(self, "4", self.lightsList[1]))
-        self.vehiclesList.append(Vehicle(self, "5", self.lightsList[0]))
-        self.vehiclesList.append(Vehicle(self, "6", self.lightsList[1]))
-        self.vehiclesList.append(Vehicle(self, "7", self.lightsList[0]))
-        self.vehiclesList.append(Vehicle(self, "8", self.lightsList[1]))
-        self.vehiclesList.append(Vehicle(self, "9", self.lightsList[0]))
-        self.vehiclesList.append(Vehicle(self, "10", self.lightsList[1]))
-        self.vehiclesList.append(Vehicle(self, "11", self.lightsList[0]))
-        self.vehiclesList.append(Vehicle(self, "12", self.lightsList[1]))
         self.roadBetweenLight = RoadBetweenLights(self)
 
         self.tmgmt = TrafficManagment(self)
-        # self.environment.process(self.generate_vehicles())
+        self.environment.process(self.generate_vehicles())
 
-        self.environment.run(until=50)
+        self.environment.run(until=200)
+        for light in self.lightsList:
+            print("END -->", light.identity, "Has Vehicles", list(str(x) for x in light.vehiclesAtLight))
     
     def generate_vehicles(self):
         # while True:
-        #     if np.random.choice([True, False], p=[self.probabiliyAddingCarPerTimeDelay, 1-self.probabiliyAddingCarPerTimeDelay]):
+        #     if np.random.choice([True, False], p=[self.probabiliyAddingVehiclePerTimeDelay, 1-self.probabiliyAddingVehiclePerTimeDelay]):
         #         numVehicles = len(self.vehiclesList)
         #         self.vehiclesList.append(Vehicle(self, str(numVehicles), self.lightsList[random.randint(0, 1)]))
-        #         yield self.environment.timeout(self.timeDelayAddingCars)
+        #         yield self.environment.timeout(self.timeDelayAddingVehicles)
         i = len(self.vehiclesList)
         while True:
-            yield self.environment.timeout(random.randint(0,3))
-            self.vehiclesList.append(Vehicle(self, str(i), self.lightsList[random.randint(0, 1)]))
+            if random.random() < self.probabiliyNewVehiclePerUnitTime:
+                self.vehiclesList.append(Vehicle(self, str(i), self.lightsList[random.randint(0, 1)]))
+            yield self.environment.timeout(1)
+            i += 1
 
 class TrafficManagment:
     def __init__(self, tenv):
@@ -93,7 +86,7 @@ class TrafficManagment:
         while True:
             for light in self.tenv.lightsList:
                 yield self.tenv.roadBetweenLight.isEmpty
-                yield self.tenv.environment.timeout(5)
+                yield self.tenv.environment.timeout(2)
                 light.change_state() # Go redamber
                 yield self.tenv.environment.timeout(1)
                 print(self.tenv.environment.now, ":","Vehicles at Traffic Light --> Identity:", light.identity, "; Vehicles:", list(str(x) for x in light.vehiclesAtLight))
@@ -122,7 +115,7 @@ class Vehicle:
 
         self.moved = self.tenv.environment.event()
 
-        print(self.tenv.environment.now, ":","Created Car --> Identity:", self.identity, "; Location:", self.location.identity)
+        print(self.tenv.environment.now, ":","Created Vehicle --> Identity:", self.identity, "; Location:", self.location.identity)
         self.tenv.environment.process(self.run())
         
     def __str__(self):
@@ -134,42 +127,60 @@ class Vehicle:
             yield self.location.lightGreenEvent
             print(self.tenv.environment.now, ":","Traffic Light is --> State:", self.location.currentState, "; For Vehicle:", self.identity)
             yield self.tenv.environment.process(self.travel_between_lights())
-            print(self.tenv.environment.now, ":","Car Has Gone Through Traffic Light --> Vehicle:", self.identity)
+            print(self.tenv.environment.now, ":","Vehicle Has Gone Through Traffic Light --> Vehicle:", self.identity)
             # break
         elif isinstance(self.location.vehiclesAtLight[self.location.vehiclesAtLight.index(self) -1], Vehicle):
-            carInFront = self.location.vehiclesAtLight[self.location.vehiclesAtLight.index(self) -1]
-            yield carInFront.moved
+            vehicleInFront = self.location.vehiclesAtLight[self.location.vehiclesAtLight.index(self) -1]
+            yield vehicleInFront.moved
+            yield self.tenv.environment.timeout(self.tenv.humanReactionTime)
+            # if self.location.vehiclesAtLight[self.location.vehiclesAtLight.index(self) -1] == 'empty':
             yield self.tenv.environment.process(self.travel_up_queue())
-        # elif self.location.vehiclesAtLight[self.location.vehiclesAtLight.index(self) -1] == 'empty':
-        #     yield self.tenv.environment.process(self.travel_up_queue())
+        elif self.location.vehiclesAtLight[self.location.vehiclesAtLight.index(self) -1] == 'empty':
+            print("Vehicle Starting to Move Up Queue Empty --> Vehicle:", self.identity, "Traffic Light:", self.location.identity)
+            yield self.tenv.environment.timeout(self.tenv.humanReactionTime)
+            yield self.tenv.environment.process(self.travel_up_queue())
 
 
     def travel_between_lights(self):
         self.tenv.roadBetweenLight.add_vehicle(self)
         if len(self.location.vehiclesAtLight) == 1 and self.location.vehiclesAtLight[0] == self:
-            self.location.vehiclesAtLight.pop(0.1)
+            self.location.vehiclesAtLight.pop(0)
         else:
             self.location.vehiclesAtLight[self.location.vehiclesAtLight.index(self)] = 'empty'
         self.moved.succeed()
-        print(self.tenv.environment.now, ":","Car is Travelling Between Lights --> Identity:", self.identity)
+        print(self.tenv.environment.now, ":","Vehicle is Travelling Between Lights --> Identity:", self.identity)
         yield self.tenv.environment.timeout(self.tenv.timeFromAToB)
         self.tenv.roadBetweenLight.remove_vehicle(self)
 
     def travel_up_queue(self):
-        self.location.vehicleTravelUpQueueQueue.enque(self)
-        if self.location.vehicleTravelUpQueueQueueEvent.processed:
-            self.location.vehicleTravelUpQueueQueueEvent.succeed()
-        # if self.location.vehiclesAtLight[-1] == 'empty':
+        
+        # if self.location.vehiclesAtLight.index(self) + 1 == (len(self.location.vehiclesAtLight) - 1):
         #     self.location.vehiclesAtLight.pop(-1)
+        # oldPos = self.location.vehiclesAtLight.index(self)
+        # self.location.vehiclesAtLight[oldPos - 1] = self
+        # if oldPos != len(self.location.vehiclesAtLight) - 1:
+        #     self.location.vehiclesAtLight[oldPos] = 'empty'
+        # else:
+        #     self.location.vehiclesAtLight.pop(oldPos)
+        # if self.location.vehiclesAtLight[-1] == 'empty':
+        #     del self.location.vehiclesAtLight[-1]
         # self.location.vehiclesAtLight[self.location.vehiclesAtLight.index(self)] = 'empty'
-        print(self.tenv.environment.now, ":","Car Moving Up Queue --> Vehicle:", self.identity, "Traffic Light:", self.location.identity)
+        print(self.tenv.environment.now, ":","Vehicle Moving Up Queue --> Vehicle:", self.identity, "Traffic Light:", self.location.identity)
         yield self.tenv.environment.timeout(self.tenv.timeToMoveUpQueue)
-        print(self.tenv.environment.now, ":","Car Moved Up Queue --> Vehicle:", self.identity, "Traffic Light:", self.location.identity)
+        self.location.vehiclesAtLight.insert(self.location.vehiclesAtLight.index(self)+1, self.location.vehiclesAtLight.pop(self.location.vehiclesAtLight.index(self)-1))
+        self.pop_last_empty()
+        print(self.tenv.environment.now, ":","Vehicle Moved Up Queue --> Vehicle:", self.identity, "Traffic Light:", self.location.identity)
         print(self.tenv.environment.now, ":","Vehicles at Traffic Light --> Identity:", self.location.identity, "; Vehicles:", list(str(x) for x in self.location.vehiclesAtLight))
         self.moved.succeed()
-        yield self.tenv.environment.timeout(0.1)
+        yield self.tenv.environment.timeout(0)
         self.moved = self.tenv.environment.event()
         self.tenv.environment.process(self.run())
+
+    def pop_last_empty(self):
+        lastItemInTrafficLightList = self.location.vehiclesAtLight[-1]
+        if lastItemInTrafficLightList == "empty":
+            self.location.vehiclesAtLight.pop(-1)
+
 
 class TrafficLight(object):
     def __init__(self, tenv, identity):
@@ -179,10 +190,6 @@ class TrafficLight(object):
         self.vehiclesAtLight = []
         self.states = itertools.cycle(['red', 'redamber', 'green', 'greenamber'])
         self.currentState = next(self.states)
-        self.vehicleTravelUpQueueQueue = Queue()
-        self.vehicleTravelUpQueueQueueEvent = self.tenv.environment.event()
-        self.vehicleTravelBetweenLightsQueue = Queue()
-        self.vehicleTravelBetweenLightsQueueEvent = self.tenv.environment.event()
 
         self.lightGreenEvent = self.tenv.environment.event()
         self.lightRedEvent = self.tenv.environment.event()
@@ -197,21 +204,6 @@ class TrafficLight(object):
             self.lightRedEvent.succeed()
             self.lightGreenEvent = self.tenv.environment.event()
         print(self.tenv.environment.now, ":","Traffic Light Changed --> Identity:", self.identity, "; State:", self.currentState)
-    
-    def travel_up_queue_list_update(self):
-        while True:
-            yield self.vehicleTravelUpQueueQueueEvent
-            vehicle = self.vehicleTravelUpQueueQueue.get()
-            oldPos = self.vehiclesAtLight.index(vehicle)
-            self.vehiclesAtLight[oldPos - 1] = vehicle
-            if oldPos != len(self.vehiclesAtLight) - 1:
-                self.vehiclesAtLight[oldPos] = 'empty'
-            else:
-                self.vehiclesAtLight.pop(oldPos)
-
-    def travel_betweenLights_list_update(self, vehicle):
-        while True:
-            yield self.vehicleTravelBetweenLightsQueueEvent
         
 class RoadBetweenLights(object):
     def __init__(self, tenv):
