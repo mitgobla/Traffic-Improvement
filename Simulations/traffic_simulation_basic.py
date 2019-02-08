@@ -9,59 +9,50 @@ import itertools
 import random
 import numpy as np
 
-class Queue(object):
-    def __init__(self):
-        self.queueList = []
-        
-    def enque(self, item):
-        self.queueList.append(self)
-    
-    def get(self, delete=True):
-        item = self.queueList[0]
-        if delete == True:
-            self.queueList.pop(0)
-        return item
-
-    def deque(self, item):
-        self.queueList.pop(self.queueList.index(item))
-
 class TrafficEnvironment(object):
     def __init__(self):
         """Configuration for environment
         """
 
+        self.environment = simpy.Environment()  # Creating environment within the 'TrafficEnvironment' Class with 'Simpy'.
 
-
+        # --- CONSTANTS FOR SIMULATION --- #
+        self.distanceFromLightToStop = 1    # The Distance in units from the stop position of the car to the Traffic Light.
         self.timeFromAToB = 4   # Time to traverse from Light 'A' to Light 'B'.
-        self.timeToMoveUpQueue = 0.5 
-        self.humanReactionTime = 0.2
+        self.timeToMoveUpQueue = 0.5    # Time it takes a vehicle to occupy the space in front within a queue.
+        self.humanReactionTime = 0.2    # Time it takes for a driver to react to a space being empty in front or the traffic light.
         self.numVehiclesA = 1    # Setting number of vehicles that will start on Light 'A'.
         self.numVehiclesB = 1    # Setting number of vehicles that will start on Light 'B'.
-        self.timeDelayAddingVehicles = 1
-        self.probabiliyNewVehiclePerUnitTime = 0.001
-        self.trafficLightVehicleGenerateWeighting = [0.4,0.6]
+        self.timePerVehicleGeneration = 1   # Units of time per generating Vehicle (used with probability)
+        self.probabiliyNewVehiclePerUnitTime = 0.2  # Probability of adding Vehicle per "timePerVehicleGeneration"
 
+        # --- VARIABLES TO SET UP SYSTEM -- #
+        self.vehiclesList = []  # Stores all the vehicles that are in the environment
+        self.lightsList = []    # Stores all the traffic lights that are in the environment
+
+        lightsToGenerate = [["A", [3,4]],
+                            ["B", [12,3]]]
+        
+        self.create_system(lightsToGenerate)    # Setup the Traffic System
 
         # --- Other ---
-        self.vehiclesList = [] # Stores all the vehicles that are in the environment
-        self.lightsList = [] # Stores all the traffic lights that are in the environmen
-        self.environment = simpy.Environment()  # Creating environment within the 'TrafficEnvironment' Class with 'Simpy'.
-        self.create_system() # Setup the Traffic System
 
-    def create_system(self):    # Creates the overall traffic environment.
+        self.environment.run(until=1000)
+
+        for light in self.lightsList:
+            print("END -->", light.identity, "Has Vehicles", list(str(x) for x in light.vehiclesAtLight))
+
+    def create_system(self, lightsToGenerate):    # Creates the overall traffic environment.
         """Create Traffic Environment
         """
 
-        self.lightsList.append(TrafficLight(self, "A"))
-        self.lightsList.append(TrafficLight(self, "B"))
+        self.lightsList.append(TrafficLight(self, "A", [3,4]))
+        self.lightsList.append(TrafficLight(self, "B", [12,3]))
+        # self.lightsList.append(TrafficLight(self, "C"))
         self.roadBetweenLight = RoadBetweenLights(self)
 
         self.tmgmt = TrafficManagment(self)
         self.environment.process(self.generate_vehicles())
-
-        self.environment.run(until=200)
-        for light in self.lightsList:
-            print("END -->", light.identity, "Has Vehicles", list(str(x) for x in light.vehiclesAtLight))
     
     def generate_vehicles(self):
         # while True:
@@ -73,7 +64,7 @@ class TrafficEnvironment(object):
         while True:
             if random.random() < self.probabiliyNewVehiclePerUnitTime:
                 self.vehiclesList.append(Vehicle(self, str(i), self.lightsList[random.randint(0, 1)]))
-            yield self.environment.timeout(1)
+            yield self.environment.timeout(self.timePerVehicleGeneration)
             i += 1
 
 class TrafficManagment:
@@ -91,7 +82,7 @@ class TrafficManagment:
                 yield self.tenv.environment.timeout(1)
                 print(self.tenv.environment.now, ":","Vehicles at Traffic Light --> Identity:", light.identity, "; Vehicles:", list(str(x) for x in light.vehiclesAtLight))
                 light.change_state() # Go Green
-                yield self.tenv.environment.timeout(1)
+                yield self.tenv.environment.timeout(5)
                 light.change_state() # Go greenamber
                 yield self.tenv.environment.timeout(1)
                 light.change_state() # Go Red
@@ -153,18 +144,6 @@ class Vehicle:
         self.tenv.roadBetweenLight.remove_vehicle(self)
 
     def travel_up_queue(self):
-        
-        # if self.location.vehiclesAtLight.index(self) + 1 == (len(self.location.vehiclesAtLight) - 1):
-        #     self.location.vehiclesAtLight.pop(-1)
-        # oldPos = self.location.vehiclesAtLight.index(self)
-        # self.location.vehiclesAtLight[oldPos - 1] = self
-        # if oldPos != len(self.location.vehiclesAtLight) - 1:
-        #     self.location.vehiclesAtLight[oldPos] = 'empty'
-        # else:
-        #     self.location.vehiclesAtLight.pop(oldPos)
-        # if self.location.vehiclesAtLight[-1] == 'empty':
-        #     del self.location.vehiclesAtLight[-1]
-        # self.location.vehiclesAtLight[self.location.vehiclesAtLight.index(self)] = 'empty'
         print(self.tenv.environment.now, ":","Vehicle Moving Up Queue --> Vehicle:", self.identity, "Traffic Light:", self.location.identity)
         yield self.tenv.environment.timeout(self.tenv.timeToMoveUpQueue)
         self.location.vehiclesAtLight.insert(self.location.vehiclesAtLight.index(self)+1, self.location.vehiclesAtLight.pop(self.location.vehiclesAtLight.index(self)-1))
@@ -172,7 +151,7 @@ class Vehicle:
         print(self.tenv.environment.now, ":","Vehicle Moved Up Queue --> Vehicle:", self.identity, "Traffic Light:", self.location.identity)
         print(self.tenv.environment.now, ":","Vehicles at Traffic Light --> Identity:", self.location.identity, "; Vehicles:", list(str(x) for x in self.location.vehiclesAtLight))
         self.moved.succeed()
-        yield self.tenv.environment.timeout(0)
+        # yield self.tenv.environment.timeout(0)
         self.moved = self.tenv.environment.event()
         self.tenv.environment.process(self.run())
 
@@ -183,10 +162,11 @@ class Vehicle:
 
 
 class TrafficLight(object):
-    def __init__(self, tenv, identity):
+    def __init__(self, tenv, identity, vector):
         self.tenv = tenv
-
+        
         self.identity = identity
+        self.vector = vector
         self.vehiclesAtLight = []
         self.states = itertools.cycle(['red', 'redamber', 'green', 'greenamber'])
         self.currentState = next(self.states)
