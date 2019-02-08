@@ -30,25 +30,24 @@ class TrafficEnvironment(object):
         self.vehiclesList = []  # Stores all the vehicles that are in the environment
         self.lightsList = []    # Stores all the traffic lights that are in the environment
 
+        # Array for light creation
         lightsToGenerate = [["A", [3,4]],
-                            ["B", [12,3]]]
+                            ["B", [12,3]]] 
         
         self.create_system(lightsToGenerate)    # Setup the Traffic System
 
-        # --- Other ---
+        self.environment.run(until=1000)    # Run the environment for ... units of time.
 
-        self.environment.run(until=1000)
-
+        # Printing lights left at each Traffic Light
         for light in self.lightsList:
             print("END -->", light.identity, "Has Vehicles", list(str(x) for x in light.vehiclesAtLight))
 
-    def create_system(self, lightsToGenerate):    # Creates the overall traffic environment.
+    def create_system(self, lightsToGenerate):
         """Create Traffic Environment
         """
-
-        self.lightsList.append(TrafficLight(self, "A", [3,4]))
-        self.lightsList.append(TrafficLight(self, "B", [12,3]))
-        # self.lightsList.append(TrafficLight(self, "C"))
+        for light in lightsToGenerate:
+            self.lightsList.append(TrafficLight(self, light[0], light[1]))
+            
         self.roadBetweenLight = RoadBetweenLights(self)
 
         self.tmgmt = TrafficManagment(self)
