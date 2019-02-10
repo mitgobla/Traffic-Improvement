@@ -167,9 +167,9 @@ class Vehicle:
         return round(math.sqrt(vectorDifference[0]**2 + vectorDifference[1]**2), 2)
     
     def calculate_distance_stop_to_light(self):
-        if self.location.facingVehiclesOnSide == True:
+        if self.location.onSideOfVehicles == True:
             return round(math.sqrt(self.tenv.roadWidth**2 + self.tenv.distanceFromLightToStop**2))
-        elif self.location.facingVehiclesOnSide == False:
+        elif self.location.onSideOfVehicles == False:
             return round((self.tenv.distanceFromLightToStop + self.tenv.distanceAtStopClearance), 2)
     
     def calculate_time(self, speed, distance, accelerate=True, deccelerate=True):
@@ -226,6 +226,7 @@ class TrafficLight(object):
         self.onSideOfVehicles = onSideOfVehicles
         self.vehiclesAtLight = []
         self.states = itertools.cycle(['red', 'redamber', 'green', 'greenamber'])
+        self.angleToVerticle = self.calculate_angle_to_verticle()
         self.currentState = next(self.states)
 
         self.lightGreenEvent = self.tenv.environment.event()
@@ -233,23 +234,25 @@ class TrafficLight(object):
         print(self.tenv.environment.now, ":","Created Traffic Light --> Identity:", self.identity)
     
     def calculate_angle_to_verticle(self):
-        VI = self.tenv.intersectingPoint    # Vector of intersecting point
-        VT = self.vector    # Vector of traffic light
+        VIntersection = self.tenv.intersectingPoint    # Vector of intersecting point
+        VLight = self.vector    # Vector of traffic light
         
-        if VT[0] > VI[0] and VT[1] > VI[1]: # Traffic Light NorthEast to Intersection Point
-            pass
-        elif VT[0] > VI[0] and VT[1] == VI[1]:   # Traffic Light East to Intersection Point
-            pass
-        elif VT[0] > VI[0] and VI[1] > VT[1]:   # Traffic Light SouthEast to Intersetcion Point
-            pass
-        elif VT[0] == VI[0] and VI[1] > VT[1]:   # Traffic Light South to Intersection Point
-            pass
-        elif VI[0] > VT[0] and VI[1] > VT[1]:   # Traffic Light SouthWest to Intersection Point
-            pass
-        elif VI[0] > VT[0] and VT[1] == VI[1]:  # Traffic Light West to Intersection Point
-            pass
-        elif VI[0] > VT[0] and VT[1] > VI[1]:   # Traffic Light NorthWest to Intersection Point
-            pass
+        if VLight[0] > VIntersection[0] and VLight[1] > VIntersection[1]:   # Traffic Light NorthEast to Intersection Point
+            return math.degrees(math.atan((VLight[0]-VIntersection[0])/(VLight[1]-VIntersection[1])))
+        elif VLight[0] > VIntersection[0] and VLight[1] == VIntersection[1]:   # Traffic Light East to Intersection Point
+            return 90.0
+        elif VLight[0] > VIntersection[0] and VIntersection[1] > VLight[1]:   # Traffic Light SouthEast to Intersetcion Point
+            return 180.0 + math.degrees(math.atan((VLight[0]-VIntersection[0])/(VLight[1]-VIntersection[1])))
+        elif VLight[0] == VIntersection[0] and VIntersection[1] > VLight[1]:   # Traffic Light South to Intersection Point
+            return 180.0
+        elif VIntersection[0] > VLight[0] and VIntersection[1] > VLight[1]:   # Traffic Light SouthWest to Intersection Point
+            return math.degrees(math.atan((VLight[0]-VIntersection[0])/(VLight[1]-VIntersection[1]))) - 180.0
+        elif VIntersection[0] > VLight[0] and VLight[1] == VIntersection[1]:  # Traffic Light West to Intersection Point
+            return 270.0
+        elif VIntersection[0] > VLight[0] and VLight[1] > VIntersection[1]:   # Traffic Light NorthWest to Intersection Point
+            return math.degrees(math.atan((VLight[0]-VIntersection[0])/(VLight[1]-VIntersection[1])))
+        elif VLight[0] == VIntersection[0] and VLight[1] > VIntersection[1]:    # Traffic Light North to Intersection Point
+            return 0.0
 
     def change_state(self):
         self.currentState = next(self.states)
