@@ -130,7 +130,10 @@ class Vehicle:
         self.length = round(random.uniform(self.tenv.vehicleTypeDict[self.type]["length"][0], self.tenv.vehicleTypeDict[self.type]["length"][1]), 2)
         self.acceleration = round(random.uniform(self.tenv.vehicleTypeDict[self.type]["acceleration"][0], self.tenv.vehicleTypeDict[self.type]["acceleration"][1]), 2)
         self.speed = round(np.random.normal(self.tenv.speedLimit, (self.tenv.humanSpeedError/2)), 2)
-        
+        self.gapDistance = round((1.5 + np.random.normal(1, 3)), 2)
+        self.updateVehicleVector()
+
+        print(self.gapDistance)
         if self.tenv.weather == 'rain':
             self.speed -= round(random.uniform(self.tenv.rainSpeedReduction[0], self.tenv.rainSpeedReduction[1]), 2)
         elif self.tenv.weather == 'snow':
@@ -198,6 +201,22 @@ class Vehicle:
                 timeAtFinalSpeed = distanceAtFinalSpeed/speed
                 return round((timeToAccelerate + timeAtFinalSpeed), 2)
 
+    def updateVehicleVector(self):
+        if self.location.vehiclesAtLight.index(self) == 0:
+            if self.location.onSideOfVehicles:
+                totalGap = self.tenv.distanceFromLightToStop + self.gapDistance
+            else:
+                totalGap = self.tenv.distanceFromLightToStop + self.tenv.distanceAtStopClearance + self.gapDistance
+            vectorDelta = [math.sin(self.location.angleToVerticle) * totalGap, math.cos(self.location.angleToVerticle) * totalGap]
+            vector = [self.location.vector[0] + vectorDelta[0], self.location.vector[1] + vectorDelta[1]]
+        else:
+            vectorDelta = [math.sin(self.location.angleToVerticle) * self.gapDistance, math.cos(self.location.angleToVerticle) * self.gapDistance]
+            vehicleInFront = self.location.vehiclesAtLight[self.location.vehiclesAtLight.index(self) - 1]
+            vectorDeltaVehicleInFrontLength = [math.sin(self.location.angleToVerticle) * vehicleInFront.length, math.cos(self.location.angleToVerticle) * vehicleInFront.length]
+            vector = [vehicleInFront.vector[0] +  vectorDeltaVehicleInFrontLength[0] + vectorDelta[0], vehicleInFront.vector[1] +  vectorDeltaVehicleInFrontLength[1] + vectorDelta[1]]
+        print(vector)
+        self.vector = list(map(lambda x: round(x, 2), vector))
+        
 
     def travel_between_lights(self):
         yield self.tenv.environment.timeout(self.calculate_time(self.speed, self.calculate_distance_stop_to_light(), deccelerate=False)) # Time to leave queue and enter road between traffic light
@@ -213,6 +232,7 @@ class Vehicle:
         print(self.tenv.environment.now, ":","Vehicle Moving Up Queue --> Vehicle:", self.identity, "Traffic Light:", self.location.identity)
         yield self.tenv.environment.timeout(self.tenv.timeToMoveUpQueue)
         self.moved.succeed()
+        self.updateVehicleVector()
         print(self.tenv.environment.now, ":","Vehicle Moved Up Queue --> Vehicle:", self.identity, "Traffic Light:", self.location.identity)
         print(self.tenv.environment.now, ":","Vehicles at Traffic Light --> Identity:", self.location.identity, "; Vehicles:", list(str(x) for x in self.location.vehiclesAtLight))
         self.tenv.environment.process(self.run())
