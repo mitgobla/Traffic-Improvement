@@ -69,7 +69,7 @@ class TrafficEnvironment(object):
         lightsToGenerate = [["A", [3,4], True],
                             ["B", [12,3], False]] 
         
-        self.intersectingPoint = [7.5, 3.5]
+        self.intersectingPointVector = [7.5, 3.5]
 
         for light in lightsToGenerate:
             self.lightsList.append(TrafficLight(self, light[0], light[1], light[2]))
@@ -86,6 +86,18 @@ class TrafficEnvironment(object):
                 self.vehiclesList.append(Vehicle(self, str(i), self.lightsList[random.randint(0, len(self.lightsList)-1)]))
                 i += 1
             yield self.environment.timeout(self.timePerVehicleGeneration)
+
+    def calculate_vector(v1, angle, distance):
+        return [(v1[0] + distance*math.sin(math.radians(angle))), (v1[1] + distance*math.cos(math.radians(angle)))]
+    
+    def calculate_angle_trig(v1, v2):
+        angle = math.atan2(v2[0]-v1[0], v2[1]-v1[1])
+        angle = math.degrees(angle)
+        return angle
+
+    def calculate_distance(v1, v2):
+        return math.sqrt((abs(v1[0]-v2[0]))**2 + (abs(v1[1]-v2[1]))**2)
+
 
 class TrafficManagement:
     def __init__(self, tenv):
@@ -239,40 +251,28 @@ class Vehicle:
 
 class TrafficLight(object):
     def __init__(self, tenv, identity, vector, onSideOfVehicles):
+
         self.tenv = tenv
-        
         self.identity = identity
         self.vector = vector
-        self.onSideOfVehicles = onSideOfVehicles
         self.vehiclesAtLight = []
         self.states = itertools.cycle(['red', 'redamber', 'green', 'greenamber'])
-        self.angleToVerticle = self.calculate_angle_to_verticle()
+        self.angleToVerticle = self.tenv.calculate_angle_trig(self.tenv.intersectingPointVector, self)
         self.currentState = next(self.states)
+
+        # TYPE OF LIGHT
+        self.onSideOfVehicles = onSideOfVehicles
+        self.onSideOfObstruction = onSideOfObstruction
+        self.clearanceGapNeeded = clearanceGap
+        self.lightFirstVehicleStopVector = 
+        if self.onSideOfObstruction:
+            pass:
+        else:
+            pass
 
         self.lightGreenEvent = self.tenv.environment.event()
         self.lightRedEvent = self.tenv.environment.event()
         print(self.tenv.environment.now, ":","Created Traffic Light --> Identity:", self.identity)
-    
-    def calculate_angle_to_verticle(self):
-        VIntersection = self.tenv.intersectingPoint    # Vector of intersecting point
-        VLight = self.vector    # Vector of traffic light
-        
-        if VLight[0] > VIntersection[0] and VLight[1] > VIntersection[1]:   # Traffic Light NorthEast to Intersection Point
-            return math.degrees(math.atan((VLight[0]-VIntersection[0])/(VLight[1]-VIntersection[1])))
-        elif VLight[0] > VIntersection[0] and VLight[1] == VIntersection[1]:   # Traffic Light East to Intersection Point
-            return 90.0
-        elif VLight[0] > VIntersection[0] and VIntersection[1] > VLight[1]:   # Traffic Light SouthEast to Intersetcion Point
-            return 180.0 + math.degrees(math.atan((VLight[0]-VIntersection[0])/(VLight[1]-VIntersection[1])))
-        elif VLight[0] == VIntersection[0] and VIntersection[1] > VLight[1]:   # Traffic Light South to Intersection Point
-            return 180.0
-        elif VIntersection[0] > VLight[0] and VIntersection[1] > VLight[1]:   # Traffic Light SouthWest to Intersection Point
-            return math.degrees(math.atan((VLight[0]-VIntersection[0])/(VLight[1]-VIntersection[1]))) - 180.0
-        elif VIntersection[0] > VLight[0] and VLight[1] == VIntersection[1]:  # Traffic Light West to Intersection Point
-            return 270.0
-        elif VIntersection[0] > VLight[0] and VLight[1] > VIntersection[1]:   # Traffic Light NorthWest to Intersection Point
-            return math.degrees(math.atan((VLight[0]-VIntersection[0])/(VLight[1]-VIntersection[1])))
-        elif VLight[0] == VIntersection[0] and VLight[1] > VIntersection[1]:    # Traffic Light North to Intersection Point
-            return 0.0
 
     def change_state(self):
         self.currentState = next(self.states)
@@ -284,6 +284,18 @@ class TrafficLight(object):
             self.lightGreenEvent = self.tenv.environment.event()
         print(self.tenv.environment.now, ":","Traffic Light Changed --> Identity:", self.identity, "; State:", self.currentState)
         
+
+class TrafficLightNew(object):
+    def __init__(self, tenv, identity, vector, distanceQtoL, onVehicleSide, onObstructionSide):
+        self.tenv = tenv
+
+        self.identity = identity
+        self.vectorPosition = vector
+        self.onVehicleSide = onVehicleSide
+        self.onObstructionSide = onObstructionSide
+        self.distanceQtoL = distanceQtoL
+
+
 class RoadBetweenLights(object):
     def __init__(self, tenv):
         self.tenv = tenv

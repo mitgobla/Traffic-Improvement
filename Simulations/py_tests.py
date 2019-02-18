@@ -1,25 +1,18 @@
 import math
 import random
 
-VIntersection = [random.randint(-10,10), random.randint(-10,10)]
-VLight = [random.randint(-10,10), random.randint(-10,10)]
+v1 = [2,2]
+v2 = [1,3]
+distance = 5
+angle = 135
 
-def calculate_angle_to_verticle(VIntersection, VLight):
-    if VLight[0] > VIntersection[0] and VLight[1] > VIntersection[1]:   # Traffic Light NorthEast to Intersection Point
-        return math.degrees(math.atan((VLight[0]-VIntersection[0])/(VLight[1]-VIntersection[1])))
-    elif VLight[0] > VIntersection[0] and VLight[1] == VIntersection[1]:   # Traffic Light East to Intersection Point
-        return 90.0
-    elif VLight[0] > VIntersection[0] and VIntersection[1] > VLight[1]:   # Traffic Light SouthEast to Intersetcion Point
-        return 180.0 + math.degrees(math.atan((VLight[0]-VIntersection[0])/(VLight[1]-VIntersection[1])))
-    elif VLight[0] == VIntersection[0] and VIntersection[1] > VLight[1]:   # Traffic Light South to Intersection Point
-        return 180.0
-    elif VIntersection[0] > VLight[0] and VIntersection[1] > VLight[1]:   # Traffic Light SouthWest to Intersection Point
-        return math.degrees(math.atan((VLight[0]-VIntersection[0])/(VLight[1]-VIntersection[1]))) - 180.0
-    elif VIntersection[0] > VLight[0] and VLight[1] == VIntersection[1]:  # Traffic Light West to Intersection Point
-        return 270.0
-    elif VIntersection[0] > VLight[0] and VLight[1] > VIntersection[1]:   # Traffic Light NorthWest to Intersection Point
-        return math.degrees(math.atan((VLight[0]-VIntersection[0])/(VLight[1]-VIntersection[1])))
-    elif VLight[0] == VIntersection[0] and VLight[1] > VIntersection[1]:    # Traffic Light North to Intersection Point
-        return 0.0
+def calculate_vector(v2, distance, angle):
+    v2 = [(v1[0] + distance*math.sin(math.radians(angle))), (v1[1] + distance*math.cos(math.radians(angle)))]
+    return v2
 
-print(VIntersection, VLight, calculate_angle_to_verticle(VIntersection, VLight)) 
+# print(calculate_vector(v1, distance, angle))
+
+def calculate_angle_trig(v1, v2):
+    angle = math.atan2(v2[0]-v1[0], v2[1]-v1[1])
+    angle = math.degrees(angle)
+    return angle
