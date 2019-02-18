@@ -62,6 +62,7 @@ class TrafficEnvironment(object):
         # printing lights left at each Traffic Light
         for light in self.lightsList:
             print("END -->", light.identity, "Has Vehicles", list(str(x) for x in light.vehiclesAtLight))
+            print(light.angleToVerticle)
 
     def create_system(self):
         """Create Traffic Environment
@@ -169,12 +170,6 @@ class Vehicle:
         vectorDifference = [abs(V2[0] - V1[0]), abs(V2[1] - V1[1])]
         return round(math.sqrt(vectorDifference[0]**2 + vectorDifference[1]**2), 2)
     
-    def calculate_distance_stop_to_light(self):
-        if self.location.onSideOfVehicles == True:
-            return round(math.sqrt(self.tenv.roadWidth**2 + self.tenv.distanceFromLightToStop**2))
-        elif self.location.onSideOfVehicles == False:
-            return round((self.tenv.distanceFromLightToStop + self.tenv.distanceAtStopClearance), 2)
-    
     def calculate_time(self, speed, distance, accelerate=True, deccelerate=True):
         if accelerate == False and deccelerate == False:
             return (distance/speed)
@@ -219,7 +214,7 @@ class Vehicle:
         
 
     def travel_between_lights(self):
-        yield self.tenv.environment.timeout(self.calculate_time(self.speed, self.calculate_distance_stop_to_light(), deccelerate=False)) # Time to leave queue and enter road between traffic light
+        yield self.tenv.environment.timeout(self.calculate_time(self.speed, self.location.distanceStopToLightParallel, deccelerate=False)) # Time to leave queue and enter road between traffic light
         self.tenv.roadBetweenLight.add_vehicle(self)
         self.location.vehiclesAtLight.pop(self.location.vehiclesAtLight.index(self))
         self.moved.succeed()
@@ -247,6 +242,10 @@ class TrafficLight(object):
         self.vehiclesAtLight = []
         self.states = itertools.cycle(['red', 'redamber', 'green', 'greenamber'])
         self.angleToVerticle = self.calculate_angle_to_verticle()
+        if self.onSideOfVehicles:
+            self.distanceStopToLightParallel = math.sqrt(0.5*(self.tenv.roadWidth**2) + self.tenv.distanceFromLightToStop**2)
+        else:
+            self.distanceStopToLightParallel = math.sqrt(0.5*(self.tenv.roadWidth**2) + self.tenv.distanceAtStopClearance**2) + math.sqrt(0.5*(self.tenv.roadWidth**2) + self.tenv.distanceFromLightToStop**2)
         self.currentState = next(self.states)
 
         self.lightGreenEvent = self.tenv.environment.event()
@@ -268,7 +267,7 @@ class TrafficLight(object):
         elif VIntersection[0] > VLight[0] and VIntersection[1] > VLight[1]:   # Traffic Light SouthWest to Intersection Point
             return math.degrees(math.atan((VLight[0]-VIntersection[0])/(VLight[1]-VIntersection[1]))) - 180.0
         elif VIntersection[0] > VLight[0] and VLight[1] == VIntersection[1]:  # Traffic Light West to Intersection Point
-            return 270.0
+            return -90
         elif VIntersection[0] > VLight[0] and VLight[1] > VIntersection[1]:   # Traffic Light NorthWest to Intersection Point
             return math.degrees(math.atan((VLight[0]-VIntersection[0])/(VLight[1]-VIntersection[1])))
         elif VLight[0] == VIntersection[0] and VLight[1] > VIntersection[1]:    # Traffic Light North to Intersection Point
