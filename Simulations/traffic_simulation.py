@@ -48,10 +48,14 @@ class TrafficEnvironment(object):
         # Converting speed from miles/hour to metres/second
         self.speedLimit = self.speedLimit*0.44704   
         self.humanSpeedError = self.humanSpeedError*0.44704
-        
+
         self.standardGapQtoL = 3    # The Distance in units from the stop position of the car to the Traffic Light
         self.standardGapLtoO = 3    # The Distance in units from the stop position to allow opposite driving cars past
         self.roadWidth = 6  # The distance in units of the road width.
+        # STANDARD UNIQUE FOR LIGHT TYPE 3 and 4
+        self.standardAngleQtoLfor3and4 = self.calculate_angle_trig(self.standardGapQtoL, self.roadWidth/2)
+        self.standardDistanceQtoLfor3and4 = self.calculate_distance(self.standardGapQtoL, self.roadWidth/2)
+        self.standardAngleLto
 
         # Array for light creation
         
@@ -98,7 +102,13 @@ class TrafficEnvironment(object):
         """
         return [(v1[0] + distance*math.sin(math.radians(angle))), (v1[1] + distance*math.cos(math.radians(angle)))]
     
-    def calculate_angle_trig(v1, v2):
+    def calculate_angle_trig(x, y):
+        angle = math.atan2(x, y)
+        angle = math.degrees(angle)
+        return angle
+
+
+    def calculate_angle_trig_vector(v1, v2):
         angle = math.atan2(v2[0]-v1[0], v2[1]-v1[1])
         angle = math.degrees(angle)
         return angle
@@ -311,19 +321,19 @@ class TrafficLightNew(object):
         self.bearingFacing = self.tenv.calculate_angle_trig(self.vectorPosition, self.tenv.intersectingPointVector)
         self.lightType = lightType
         
-    
-        if onVehicleSide == True and onObstructionSide == True: # Vehicle veers right then goes straight. 1
-            self.distanceQtoL = self.gapQtoL
-            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing, self.gapQtoL)
-        elif onVehicleSide == True and onObstructionSide == False:  # Vehicle veers right then veers left. 2
-            self.distanceQtoL = self.gapQtoL
-            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing, self.gapQtoL)
-        elif onVehicleSide == False and onObstructionSide == True:  # Vehicle goes straight then veers right. 3
-            self.vectorPL = self.tenv.calculate_vector(self.vectorPosition, self.)
-            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing, self.gapQtoL)
-        elif onVehicleSide == False and onObstructionSide == False: # Vehicle goes straight. 4
-            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing, self.gapQtoL)
-        
+        if self.lightType == 1:
+            self.distanceQtoL = self.tenv.standardGapQtoL
+            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing, self.distanceQtoL)
+            self.distance
+        elif self.lightType == 2:
+            self.distanceQtoL = self.tenv.standardGapQtoL
+            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing, self.distanceQtoL)
+        elif self.lightType == 3:
+            self.distanceQtoL = self.tenv.standardDistanceQtoLfor3and4
+            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.standardAngleQtoLfor3and4, self.distanceQtoL)
+        elif self.lightType == 4:
+            self.distanceQtoL = self.tenv.standardDistanceQtoLfor3and4
+            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.standardAngleQtoLfor3and4, self.distanceQtoL)
 
         
 
