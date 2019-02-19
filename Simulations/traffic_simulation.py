@@ -49,8 +49,8 @@ class TrafficEnvironment(object):
         self.speedLimit = self.speedLimit*0.44704   
         self.humanSpeedError = self.humanSpeedError*0.44704
         
-        self.distanceFromLightToStop = 3    # The Distance in units from the stop position of the car to the Traffic Light
-        self.distanceAtStopClearance = 3    # The Distance in units from the stop position to allow opposite driving cars past
+        self.standardGapQtoL = 3    # The Distance in units from the stop position of the car to the Traffic Light
+        self.standardGapLtoO = 3    # The Distance in units from the stop position to allow opposite driving cars past
         self.roadWidth = 6  # The distance in units of the road width.
 
         # Array for light creation
@@ -89,6 +89,13 @@ class TrafficEnvironment(object):
             yield self.environment.timeout(self.timePerVehicleGeneration)
 
     def calculate_vector(v1, angle, distance):
+        """Calculates a vector with an angle and distance from a current vector
+
+        Arguments:
+            v1 {array} -- Vector to take angle and distance from.
+            angle {float} -- Angle in degrees from original vector.
+            distance {float} -- Distance at angle from original vector.
+        """
         return [(v1[0] + distance*math.sin(math.radians(angle))), (v1[1] + distance*math.cos(math.radians(angle)))]
     
     def calculate_angle_trig(v1, v2):
@@ -96,8 +103,11 @@ class TrafficEnvironment(object):
         angle = math.degrees(angle)
         return angle
 
-    def calculate_distance(v1, v2):
-        return math.sqrt((abs(v1[0]-v2[0]))**2 + (abs(v1[1]-v2[1]))**2)
+    def calculate_distance(x,y):
+        return math.sqrt(x**2 + y**2)
+
+    def calculate_distance_vectors(v1, v2):
+        return math.sqrt((v1[0]-v2[0])**2 + (v1[1]-v2[1])**2)
 
 
 class TrafficManagement:
@@ -285,14 +295,37 @@ class TrafficLight(object):
         
 
 class TrafficLightNew(object):
-    def __init__(self, tenv, identity, vector, distanceQtoL, onVehicleSide, onObstructionSide):
+    def __init__(self, tenv, identity, position, lightType):
+        """Creates a Traffic Light
+        
+        Arguments:
+            tenv {TrafficEnvironment} -- Traffic Environment. Used to access configured variables.
+            identity {str} -- Name of light.
+            position {vector} -- Vector position of where it is in the environment.
+            lightType {int} -- One of 4 different layouts for traffic  lights.
+        """
         self.tenv = tenv
 
         self.identity = identity
         self.vectorPosition = vector
-        self.onVehicleSide = onVehicleSide
-        self.onObstructionSide = onObstructionSide
-        self.distanceQtoL = distanceQtoL
+        self.bearingFacing = self.tenv.calculate_angle_trig(self.vectorPosition, self.tenv.intersectingPointVector)
+        self.lightType = lightType
+        
+    
+        if onVehicleSide == True and onObstructionSide == True: # Vehicle veers right then goes straight. 1
+            self.distanceQtoL = self.gapQtoL
+            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing, self.gapQtoL)
+        elif onVehicleSide == True and onObstructionSide == False:  # Vehicle veers right then veers left. 2
+            self.distanceQtoL = self.gapQtoL
+            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing, self.gapQtoL)
+        elif onVehicleSide == False and onObstructionSide == True:  # Vehicle goes straight then veers right. 3
+            self.vectorPL = self.tenv.calculate_vector(self.vectorPosition, self.)
+            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing, self.gapQtoL)
+        elif onVehicleSide == False and onObstructionSide == False: # Vehicle goes straight. 4
+            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing, self.gapQtoL)
+        
+
+        
 
 
 class RoadBetweenLights(object):
