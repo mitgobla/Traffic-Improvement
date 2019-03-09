@@ -10,6 +10,7 @@ import random
 import numpy as np
 import math
 import json
+import matplotlib.pyplot as plt
 
 class TrafficEnvironment(object):
     def __init__(self):
@@ -50,36 +51,35 @@ class TrafficEnvironment(object):
         self.humanSpeedError = self.humanSpeedError*0.44704
 
         self.standardGapQtoL = 3    # The Distance in units from the stop position of the car to the Traffic Light
-        self.standardGapLtoO = 3    # The Distance in units from the stop position to allow opposite driving cars past
+        self.standardGapLtoONonClearance = 0    # The Distance in units from the light to the start of the obstruction
+        self.standardGapLtoOWithClearance = 3   # The Distance in units from the light to the start of the obstruction to allow opposite driving cars past
         self.roadWidth = 6  # The distance in units of the road width.
         # STANDARD UNIQUE FOR LIGHT TYPE 3 and 4
-        self.standardAngleQtoLfor3and4 = self.calculate_angle_trig(self.standardGapQtoL, self.roadWidth/2)
-        self.standardDistanceQtoLfor3and4 = self.calculate_distance(self.standardGapQtoL, self.roadWidth/2)
-        self.standardAngleLto
 
         # Array for light creation
         
         self.create_system()    # Setup the Traffic System
 
         self.environment.run(until=1000)    # Run the environment for ... units of time.
-
+        vectorListX = []
         # printing lights left at each Traffic Light
         for light in self.lightsList:
+            vectorListX = vectorListX.append(light.)
             print("END -->", light.identity, "Has Vehicles", list(str(x) for x in light.vehiclesAtLight))
-            print(light.angleToVerticle)
+        
 
     def create_system(self):
         """Create Traffic Environment
         """
-        lightsToGenerate = [["A", [3,4], True],
-                            ["B", [12,3], False]] 
+        lightsToGenerate = [["A", [3,4], 1],
+                            ["B", [12,3], 2]] 
         
         self.intersectingPointVector = [7.5, 3.5]
 
         for light in lightsToGenerate:
             self.lightsList.append(TrafficLight(self, light[0], light[1], light[2]))
             
-        self.roadBetweenLight = RoadBetweenLights(self)
+        self.roadBetweenLights = RoadBetweenLights(self)
 
         self.tmgmt = TrafficManagement(self)
         self.environment.process(self.generate_vehicles())
@@ -92,7 +92,7 @@ class TrafficEnvironment(object):
                 i += 1
             yield self.environment.timeout(self.timePerVehicleGeneration)
 
-    def calculate_vector(v1, angle, distance):
+    def calculate_vector(self, v1, angle, distance):
         """Calculates a vector with an angle and distance from a current vector
 
         Arguments:
@@ -102,21 +102,23 @@ class TrafficEnvironment(object):
         """
         return [(v1[0] + distance*math.sin(math.radians(angle))), (v1[1] + distance*math.cos(math.radians(angle)))]
     
-    def calculate_angle_trig(x, y):
+    def calculate_angle_trig(self, v1, v2):
+        x = v1[0] - v2[0]
+        y = v1[1] - v2[1]
         angle = math.atan2(x, y)
         angle = math.degrees(angle)
         return angle
 
 
-    def calculate_angle_trig_vector(v1, v2):
+    def calculate_angle_trig_vector(self, v1, v2):
         angle = math.atan2(v2[0]-v1[0], v2[1]-v1[1])
         angle = math.degrees(angle)
         return angle
 
-    def calculate_distance(x,y):
+    def calculate_distance(self, x, y):
         return math.sqrt(x**2 + y**2)
 
-    def calculate_distance_vectors(v1, v2):
+    def calculate_distance_vectors(self, v1, v2):
         return math.sqrt((v1[0]-v2[0])**2 + (v1[1]-v2[1])**2)
 
 
@@ -124,21 +126,20 @@ class TrafficManagement:
     def __init__(self, tenv):
         self.tenv = tenv
         self.tenv.environment.process(self.cycle_light_states())
-        # self.tenv.environment.process(self.tenv.roadBetweenLight.until_empty())       
     
     def cycle_light_states(self):
         while True:
             for light in self.tenv.lightsList:
-                yield self.tenv.roadBetweenLight.isEmpty
+                yield self.tenv.roadBetweenLights.isEmpty
                 yield self.tenv.environment.timeout(1)
-                light.change_state() # Go redamber
+                light.change_light_state() # Go redamber
                 yield self.tenv.environment.timeout(1)
                 print(self.tenv.environment.now, ":","Vehicles at Traffic Light --> Identity:", light.identity, "; Vehicles:", list(str(x) for x in light.vehiclesAtLight))
-                light.change_state() # Go Green
+                light.change_light_state() # Go Green
                 yield self.tenv.environment.timeout(15)
-                light.change_state() # Go greenamber
+                light.change_light_state() # Go greenamber
                 yield self.tenv.environment.timeout(1)
-                light.change_state() # Go Red
+                light.change_light_state() # Go Red
                 
 
 class Vehicle:
@@ -164,7 +165,7 @@ class Vehicle:
         self.acceleration = round(random.uniform(self.tenv.vehicleTypeDict[self.type]["acceleration"][0], self.tenv.vehicleTypeDict[self.type]["acceleration"][1]), 2)
         self.speed = round(np.random.normal(self.tenv.speedLimit, (self.tenv.humanSpeedError/2)), 2)
         self.gapDistance = round((1.5 + np.random.normal(1, 3)), 2)
-        self.updateVehicleVector()
+        self.update_vehicle_vector
 
         print(self.gapDistance)
         if self.tenv.weather == 'rain':
@@ -196,11 +197,6 @@ class Vehicle:
             self.position = self.location.vehiclesAtLight.index(self)
             yield self.location.vehiclesAtLight[self.position - 1].moved
             yield self.tenv.environment.process(self.travel_up_queue())
-
-
-    def calculate_distance(self, V1, V2):
-        vectorDifference = [abs(V2[0] - V1[0]), abs(V2[1] - V1[1])]
-        return round(math.sqrt(vectorDifference[0]**2 + vectorDifference[1]**2), 2)
     
     def calculate_time(self, speed, distance, accelerate=True, deccelerate=True):
         if accelerate == False and deccelerate == False:
@@ -228,84 +224,41 @@ class Vehicle:
                 timeAtFinalSpeed = distanceAtFinalSpeed/speed
                 return round((timeToAccelerate + timeAtFinalSpeed), 2)
 
-    def updateVehicleVector(self):
+    def update_vehicle_vector(self):
         if self.location.vehiclesAtLight.index(self) == 0:
-            if self.location.onSideOfVehicles:
-                totalGap = self.tenv.distanceFromLightToStop + self.gapDistance
-            else:
-                totalGap = self.tenv.distanceFromLightToStop + self.tenv.distanceAtStopClearance + self.gapDistance
-            vectorDelta = [math.sin(self.location.angleToVerticle) * totalGap, math.cos(self.location.angleToVerticle) * totalGap]
-            vector = [self.location.vector[0] + vectorDelta[0], self.location.vector[1] + vectorDelta[1]]
+            self.vector = self.location.vectorQ
         else:
-            vectorDelta = [math.sin(self.location.angleToVerticle) * self.gapDistance, math.cos(self.location.angleToVerticle) * self.gapDistance]
+            vectorDelta = [math.sin(self.location.bearingFacing) * self.gapDistance, math.cos(self.location.bearingFacing) * self.gapDistance]
             vehicleInFront = self.location.vehiclesAtLight[self.location.vehiclesAtLight.index(self) - 1]
-            vectorDeltaVehicleInFrontLength = [math.sin(self.location.angleToVerticle) * vehicleInFront.length, math.cos(self.location.angleToVerticle) * vehicleInFront.length]
+            vectorDeltaVehicleInFrontLength = [math.sin(self.location.bearingFacing) * vehicleInFront.length, math.cos(self.location.bearingFacing) * vehicleInFront.length]
             vector = [vehicleInFront.vector[0] +  vectorDeltaVehicleInFrontLength[0] + vectorDelta[0], vehicleInFront.vector[1] +  vectorDeltaVehicleInFrontLength[1] + vectorDelta[1]]
-        print(vector)
-        self.vector = list(map(lambda x: round(x, 2), vector))
+            self.vector = list(map(lambda x: round(x, 2), vector))
         
 
     def travel_between_lights(self):
-        yield self.tenv.environment.timeout(self.calculate_time(self.speed, self.location.distanceStopToLightParallel, deccelerate=False)) # Time to leave queue and enter road between traffic light
-        self.tenv.roadBetweenLight.add_vehicle(self)
+        self.tenv.roadBetweenLights.add_vehicle(self)
+        yield self.tenv.environment.timeout(self.calculate_time(self.speed, self.location.distanceQtoPL, deccelerate=False)) # Time to leave queue and enter road between traffic light
         self.location.vehiclesAtLight.pop(self.location.vehiclesAtLight.index(self))
+        self.vector = self.location.vectorPL
         self.moved.succeed()
         print(self.tenv.environment.now, ":","Vehicle is Travelling Between Lights --> Identity:", self.identity)
-        yield self.tenv.environment.timeout(self.calculate_time(self.speed, self.calculate_distance(self.tenv.lightsList[0].vector, self.tenv.lightsList[1].vector), accelerate=False, deccelerate=False))
-        self.tenv.roadBetweenLight.remove_vehicle(self)
+        yield self.tenv.environment.timeout(self.calculate_time(self.speed, self.location.distancePLtoPO, accelerate=False, deccelerate=False))
+        self.vector = self.location.vectorPO
+        yield self.tenv.environment.timeout(self.calculate_time(self.speed, self.tenv.calculate_distance_vectors(self.tenv.lightsList[0].vectorPosition, self.tenv.lightsList[1].vectorPosition), accelerate=False, deccelerate=False))
+        self.tenv.roadBetweenLights.remove_vehicle(self)
         print(self.tenv.environment.now, ":", "Vehicle has Travelled Through Lights --> Identity:", self.identity)
 
     def travel_up_queue(self):
         print(self.tenv.environment.now, ":","Vehicle Moving Up Queue --> Vehicle:", self.identity, "Traffic Light:", self.location.identity)
         yield self.tenv.environment.timeout(self.tenv.timeToMoveUpQueue)
         self.moved.succeed()
-        self.updateVehicleVector()
+        self.update_vehicle_vector()
         print(self.tenv.environment.now, ":","Vehicle Moved Up Queue --> Vehicle:", self.identity, "Traffic Light:", self.location.identity)
         print(self.tenv.environment.now, ":","Vehicles at Traffic Light --> Identity:", self.location.identity, "; Vehicles:", list(str(x) for x in self.location.vehiclesAtLight))
         self.tenv.environment.process(self.run())
 
 class TrafficLight(object):
-    def __init__(self, tenv, identity, vector, onSideOfVehicles):
-
-        self.tenv = tenv
-        self.identity = identity
-        self.vector = vector
-        self.vehiclesAtLight = []
-        self.states = itertools.cycle(['red', 'redamber', 'green', 'greenamber'])
-        self.angleToVerticle = self.calculate_angle_to_verticle()
-        if self.onSideOfVehicles:
-            self.distanceStopToLightParallel = math.sqrt(0.5*(self.tenv.roadWidth**2) + self.tenv.distanceFromLightToStop**2)
-        else:
-            self.distanceStopToLightParallel = math.sqrt(0.5*(self.tenv.roadWidth**2) + self.tenv.distanceAtStopClearance**2) + math.sqrt(0.5*(self.tenv.roadWidth**2) + self.tenv.distanceFromLightToStop**2)
-        self.currentState = next(self.states)
-
-        # TYPE OF LIGHT
-        self.onSideOfVehicles = onSideOfVehicles
-        self.onSideOfObstruction = onSideOfObstruction
-        self.clearanceGapNeeded = clearanceGap
-        self.lightFirstVehicleStopVector = 
-        if self.onSideOfObstruction:
-            pass:
-        else:
-            pass
-
-        self.lightGreenEvent = self.tenv.environment.event()
-        self.lightRedEvent = self.tenv.environment.event()
-        print(self.tenv.environment.now, ":","Created Traffic Light --> Identity:", self.identity)
-
-    def change_state(self):
-        self.currentState = next(self.states)
-        if self.currentState == 'green':
-            self.lightGreenEvent.succeed()
-            self.lightRedEvent = self.tenv.environment.event()
-        if self.currentState == 'red':
-            self.lightRedEvent.succeed()
-            self.lightGreenEvent = self.tenv.environment.event()
-        print(self.tenv.environment.now, ":","Traffic Light Changed --> Identity:", self.identity, "; State:", self.currentState)
-        
-
-class TrafficLightNew(object):
-    def __init__(self, tenv, identity, position, lightType):
+    def __init__(self, tenv, identity, vector, lightType):
         """Creates a Traffic Light
         
         Arguments:
@@ -319,23 +272,55 @@ class TrafficLightNew(object):
         self.identity = identity
         self.vectorPosition = vector
         self.bearingFacing = self.tenv.calculate_angle_trig(self.vectorPosition, self.tenv.intersectingPointVector)
-        self.lightType = lightType
-        
-        if self.lightType == 1:
-            self.distanceQtoL = self.tenv.standardGapQtoL
-            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing, self.distanceQtoL)
-            self.distance
-        elif self.lightType == 2:
-            self.distanceQtoL = self.tenv.standardGapQtoL
-            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing, self.distanceQtoL)
-        elif self.lightType == 3:
-            self.distanceQtoL = self.tenv.standardDistanceQtoLfor3and4
-            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.standardAngleQtoLfor3and4, self.distanceQtoL)
-        elif self.lightType == 4:
-            self.distanceQtoL = self.tenv.standardDistanceQtoLfor3and4
-            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.standardAngleQtoLfor3and4, self.distanceQtoL)
+        self.vehiclesAtLight = []
+        self.states = itertools.cycle(['red', 'redamber', 'green', 'greenamber'])
+        self.currentState = next(self.states)
+        self.lightGreenEvent = self.tenv.environment.event()
+        self.ligthsRedEvent = self.tenv.environment.event()
 
+        self.lightType = lightType
+        self.gapQtoL = self.tenv.standardGapQtoL
+        if self.lightType == 1:
+            self.gapLtoO = self.tenv.standardGapLtoONonClearance
+            self.vectorPL = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing-90, self.tenv.roadWidth/2)
+            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing, self.gapQtoL)
+            self.vectorPQ = self.tenv.calculate_vector(self.vectorQ, self.bearingFacing, self.tenv.roadWidth/2)
+            self.vectorO = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing+180, self.gapLtoO)
+            self.vectorPO = self.tenv.calculate_vector(self.vectorO, self.bearingFacing-90, self.tenv.roadWidth/2)
+        elif self.lightType == 2:
+            self.gapLtoO = self.tenv.standardGapLtoOWithClearance
+            self.vectorPL = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing-90, self.tenv.roadWidth/2)
+            self.vectorQ = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing, self.gapQtoL)
+            self.vectorPQ = self.tenv.calculate_vector(self.vectorQ, self.bearingFacing, self.tenv.roadWidth/2)
+            self.vectorO = self.tenv.calculate_vector(self.vectorPL, self.bearingFacing+180, self.gapLtoO)
+            self.vectorPO = self.tenv.calculate_vector(self.vectorO, self.bearingFacing+90, self.tenv.roadWidth/2)
+        elif self.lightType == 3:
+            self.gapLtoO = self.tenv.standardGapLtoOWithClearance
+            self.vectorPL = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing+90, self.tenv.roadWidth/2)
+            self.vectorQ = self.tenv.calculate_vector(self.vectorPL, self.bearingFacing, self.gapQtoL)
+            self.vectorPQ = self.tenv.calculate_vector(self.vectorQ, self.bearingFacing, self.tenv.roadWidth/2)
+            self.vectorO = self.tenv.calculate_vector(self.vectorPL, self.bearingFacing+180, self.gapLtoO)
+            self.vectorPO = self.tenv.calculate_vector(self.vectorO, self.bearingFacing-90, self.tenv.roadWidth/2)
+        elif self.lightType == 4:
+            self.gapLtoO = self.tenv.standardGapLtoONonClearance
+            self.vectorPL = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing+90, self.tenv.roadWidth/2)
+            self.vectorQ = self.tenv.calculate_vector(self.vectorPL, self.bearingFacing, self.gapQtoL)
+            self.vectorPQ = self.tenv.calculate_vector(self.vectorQ, self.bearingFacing, self.tenv.roadWidth/2)
+            self.vectorO = self.tenv.calculate_vector(self.vectorPosition, self.bearingFacing+180, self.gapLtoO)
+            self.vectorPO = self.tenv.calculate_vector(self.vectorO, self.bearingFacing+90, self.tenv.roadWidth/2)
         
+        self.distanceQtoPL = self.tenv.calculate_distance_vectors(self.vectorQ, self.vectorPL)
+        self.distancePLtoPO = self.tenv.calculate_distance_vectors(self.vectorPL, self.vectorPO)
+
+    def change_light_state(self):
+        self.currentState = next(self.states)
+        if self.currentState == 'green':
+            self.lightGreenEvent.succeed()
+            self.lightRedEvent = self.tenv.environment.event()
+        if self.currentState == 'red':
+            self.lightRedEvent.succeed()
+            self.lightGreenEvent = self.tenv.environment.event()
+        print(self.tenv.environment.now, ":","Traffic Light Changed --> Identity:", self.identity, "; State:", self.currentState)
 
 
 class RoadBetweenLights(object):
@@ -350,7 +335,7 @@ class RoadBetweenLights(object):
         self.vehiclesBetweenLights.append(vehicle)
 
     def remove_vehicle(self, vehicle):
-        self.vehiclesBetweenLights.pop(self.tenv.roadBetweenLight.vehiclesBetweenLights.index(vehicle))
+        self.vehiclesBetweenLights.pop(self.tenv.roadBetweenLights.vehiclesBetweenLights.index(vehicle))
         if len(self.vehiclesBetweenLights) == 0:
             self.isEmpty.succeed()
 
