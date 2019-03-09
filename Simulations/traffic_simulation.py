@@ -62,11 +62,14 @@ class TrafficEnvironment(object):
 
         self.environment.run(until=1000)    # Run the environment for ... units of time.
         vectorListX = []
+        vectorListY = []
         # printing lights left at each Traffic Light
         for light in self.lightsList:
-            vectorListX = vectorListX.append(light.)
+            vectorListX.append(light.vectorPosition[0])
+            vectorListY.append(light.vectorPosition[1])
             print("END -->", light.identity, "Has Vehicles", list(str(x) for x in light.vehiclesAtLight))
-        
+        plt.plot(vectorListX, vectorListY, 'ro')
+        plt.show()
 
     def create_system(self):
         """Create Traffic Environment
