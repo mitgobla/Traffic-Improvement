@@ -3,7 +3,7 @@
 Author: Ben Dodd (mitgobla)
         Edward Upton (engiego)        
 """
-
+import time
 import simpy
 import itertools
 import random
@@ -11,6 +11,11 @@ import numpy as np
 import math
 import json
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from mpl_toolkits.mplot3d import Axes3D
+import scipy.interpolate as interp
+from PIL import Image, ImageDraw
+from matplotlib.mlab import griddata
 
 class TrafficEnvironment(object):
     def __init__(self):
@@ -30,7 +35,7 @@ class TrafficEnvironment(object):
         # self.numVehiclesB = 1                       # Setting number of vehicles that will start on Light 'B'.
 
         self.timePerVehicleGeneration = 1           # Units of time per generating Vehicle (used with probability)
-        self.probabiliyNewVehiclePerUnitTime = 0.3 # Probability of adding Vehicle per "timePerVehicleGeneration"
+        self.probabiliyNewVehiclePerUnitTime = 0.3  # Probability of adding Vehicle per "timePerVehicleGeneration"
 
         self.speedLimit = 30                        # Speed limit of the road (mph, automatically converted)
         self.humanSpeedError = 10                   # Range of human Error of reaching the correct speed limit (mph, automatically converted)
@@ -54,22 +59,29 @@ class TrafficEnvironment(object):
         self.standardGapLtoONonClearance = 0    # The Distance in units from the light to the start of the obstruction
         self.standardGapLtoOWithClearance = 3   # The Distance in units from the light to the start of the obstruction to allow opposite driving cars past
         self.roadWidth = 6  # The distance in units of the road width.
+        self.timeGreen = 15
         # STANDARD UNIQUE FOR LIGHT TYPE 3 and 4
 
         # Array for light creation
         
+        vectorListLights = []
+        # # printing lights left at each Traffic Light
+        for light in self.lightsList:
+            vectorListLights.append([light.vectorPosition[0], light.vectorPosition[1]])
+            # print("END -->", light.identity, "Has Vehicles", list(str(x) for x in light.vehiclesAtLight))
+
+    def start_simulation(self):
         self.create_system()    # Setup the Traffic System
 
-        self.environment.run(until=1000)    # Run the environment for ... units of time.
-        vectorListX = []
-        vectorListY = []
-        # printing lights left at each Traffic Light
-        for light in self.lightsList:
-            vectorListX.append(light.vectorPosition[0])
-            vectorListY.append(light.vectorPosition[1])
-            print("END -->", light.identity, "Has Vehicles", list(str(x) for x in light.vehiclesAtLight))
-        plt.plot(vectorListX, vectorListY, 'ro')
-        plt.show()
+        self.environment.run(until=50000)    # Run the environment for ... units of time.
+
+        print(len(self.vehiclesList))
+        totalTime = 0
+        for vehicle in self.vehiclesList:
+            if hasattr(vehicle, "timeStoppedAtLight"):
+                totalTime += vehicle.timeStoppedAtLight
+        self.averageTimeStopped = totalTime / len(self.vehiclesList)
+        print("Average:", self.averageTimeStopped)
 
     def create_system(self):
         """Create Traffic Environment
@@ -137,9 +149,9 @@ class TrafficManagement:
                 yield self.tenv.environment.timeout(1)
                 light.change_light_state() # Go redamber
                 yield self.tenv.environment.timeout(1)
-                print(self.tenv.environment.now, ":","Vehicles at Traffic Light --> Identity:", light.identity, "; Vehicles:", list(str(x) for x in light.vehiclesAtLight))
+                # print(self.tenv.environment.now, ":","Vehicles at Traffic Light --> Identity:", light.identity, "; Vehicles:", list(str(x) for x in light.vehiclesAtLight))
                 light.change_light_state() # Go Green
-                yield self.tenv.environment.timeout(15)
+                yield self.tenv.environment.timeout(self.tenv.timeGreen)
                 light.change_light_state() # Go greenamber
                 yield self.tenv.environment.timeout(1)
                 light.change_light_state() # Go Red
@@ -162,15 +174,16 @@ class Vehicle:
         self.position = 0
         self.location.vehiclesAtLight.append(self)
         self.moved = self.tenv.environment.event()
+        self.timeWhenAdded = self.tenv.environment.now
 
         self.type = random.choice(list(self.tenv.vehicleTypeDict.keys()))
         self.length = round(random.uniform(self.tenv.vehicleTypeDict[self.type]["length"][0], self.tenv.vehicleTypeDict[self.type]["length"][1]), 2)
         self.acceleration = round(random.uniform(self.tenv.vehicleTypeDict[self.type]["acceleration"][0], self.tenv.vehicleTypeDict[self.type]["acceleration"][1]), 2)
-        self.speed = round(np.random.normal(self.tenv.speedLimit, (self.tenv.humanSpeedError/2)), 2)
-        self.gapDistance = round((1.5 + np.random.normal(1, 3)), 2)
+        self.speed = abs(round(np.random.normal(self.tenv.speedLimit, (self.tenv.humanSpeedError/2)), 2))
+        self.gapDistance = round((1.5 + abs(np.random.normal(1, 3))), 2)
         self.update_vehicle_vector
 
-        print(self.gapDistance)
+        # print(self.gapDistance)
         if self.tenv.weather == 'rain':
             self.speed -= round(random.uniform(self.tenv.rainSpeedReduction[0], self.tenv.rainSpeedReduction[1]), 2)
         elif self.tenv.weather == 'snow':
@@ -182,7 +195,7 @@ class Vehicle:
             # self.reactionTime += self.tenv.humanReactionTime - abs(round(np.random.normal(self.tenv.humanReactionTime, self.tenv.humanDistractionAmount)))
         
 
-        print(self.tenv.environment.now, ":","Created Vehicle --> Identity:", self.identity, "; Location:", self.location.identity)
+        # print(self.tenv.environment.now, ":","Created Vehicle --> Identity:", self.identity, "; Location:", self.location.identity)
         self.tenv.environment.process(self.run())
 
     def __str__(self):
@@ -192,9 +205,9 @@ class Vehicle:
         if self.location.vehiclesAtLight.index(self) == 0:
             self.moved = self.tenv.environment.event()
             yield self.location.lightGreenEvent
-            # print(self.tenv.environment.now, ":","Traffic Light is --> State:", self.location.currentState, "; For Vehicle:", self.identity)
+            # # print(self.tenv.environment.now, ":","Traffic Light is --> State:", self.location.currentState, "; For Vehicle:", self.identity)
             yield self.tenv.environment.process(self.travel_between_lights())
-            # print(self.tenv.environment.now, ":","Vehicle Has Gone Through Traffic Light --> Vehicle:", self.identity)
+            # # print(self.tenv.environment.now, ":","Vehicle Has Gone Through Traffic Light --> Vehicle:", self.identity)
         else: 
             self.moved = self.tenv.environment.event()
             self.position = self.location.vehiclesAtLight.index(self)
@@ -240,24 +253,26 @@ class Vehicle:
 
     def travel_between_lights(self):
         self.tenv.roadBetweenLights.add_vehicle(self)
+        self.timeWhenLeftLight = self.tenv.environment.now
+        self.timeStoppedAtLight = self.timeWhenLeftLight - self.timeWhenAdded
         yield self.tenv.environment.timeout(self.calculate_time(self.speed, self.location.distanceQtoPL, deccelerate=False)) # Time to leave queue and enter road between traffic light
         self.location.vehiclesAtLight.pop(self.location.vehiclesAtLight.index(self))
         self.vector = self.location.vectorPL
         self.moved.succeed()
-        print(self.tenv.environment.now, ":","Vehicle is Travelling Between Lights --> Identity:", self.identity)
+        # print(self.tenv.environment.now, ":","Vehicle is Travelling Between Lights --> Identity:", self.identity)
         yield self.tenv.environment.timeout(self.calculate_time(self.speed, self.location.distancePLtoPO, accelerate=False, deccelerate=False))
         self.vector = self.location.vectorPO
         yield self.tenv.environment.timeout(self.calculate_time(self.speed, self.tenv.calculate_distance_vectors(self.tenv.lightsList[0].vectorPosition, self.tenv.lightsList[1].vectorPosition), accelerate=False, deccelerate=False))
         self.tenv.roadBetweenLights.remove_vehicle(self)
-        print(self.tenv.environment.now, ":", "Vehicle has Travelled Through Lights --> Identity:", self.identity)
+        # print(self.tenv.environment.now, ":", "Vehicle has Travelled Through Lights --> Identity:", self.identity)
 
     def travel_up_queue(self):
-        print(self.tenv.environment.now, ":","Vehicle Moving Up Queue --> Vehicle:", self.identity, "Traffic Light:", self.location.identity)
+        # print(self.tenv.environment.now, ":","Vehicle Moving Up Queue --> Vehicle:", self.identity, "Traffic Light:", self.location.identity)
         yield self.tenv.environment.timeout(self.tenv.timeToMoveUpQueue)
         self.moved.succeed()
         self.update_vehicle_vector()
-        print(self.tenv.environment.now, ":","Vehicle Moved Up Queue --> Vehicle:", self.identity, "Traffic Light:", self.location.identity)
-        print(self.tenv.environment.now, ":","Vehicles at Traffic Light --> Identity:", self.location.identity, "; Vehicles:", list(str(x) for x in self.location.vehiclesAtLight))
+        # print(self.tenv.environment.now, ":","Vehicle Moved Up Queue --> Vehicle:", self.identity, "Traffic Light:", self.location.identity)
+        # print(self.tenv.environment.now, ":","Vehicles at Traffic Light --> Identity:", self.location.identity, "; Vehicles:", list(str(x) for x in self.location.vehiclesAtLight))
         self.tenv.environment.process(self.run())
 
 class TrafficLight(object):
@@ -323,7 +338,7 @@ class TrafficLight(object):
         if self.currentState == 'red':
             self.lightRedEvent.succeed()
             self.lightGreenEvent = self.tenv.environment.event()
-        print(self.tenv.environment.now, ":","Traffic Light Changed --> Identity:", self.identity, "; State:", self.currentState)
+        # print(self.tenv.environment.now, ":","Traffic Light Changed --> Identity:", self.identity, "; State:", self.currentState)
 
 
 class RoadBetweenLights(object):
@@ -342,4 +357,33 @@ class RoadBetweenLights(object):
         if len(self.vehiclesBetweenLights) == 0:
             self.isEmpty.succeed()
 
-TENV = TrafficEnvironment()
+START = time.clock()
+
+x = []#np.array([])
+y = []#np.array([])
+z = []#np.array([])
+for lightGreenTime in range(1,30):
+    for roadUsage in range(5, 35, 5):
+        tenv = TrafficEnvironment()
+        tenv.timeGreen = lightGreenTime
+        tenv.probabiliyNewVehiclePerUnitTime = roadUsage * 0.01
+        tenv.start_simulation()
+        # np.append(X, lightGreenTime)
+        # np.append(Y, tenv.averageTimeStopped)
+        # np.append(Z, roadUsage * 0.01)
+        y.append(lightGreenTime)
+        z.append(tenv.averageTimeStopped)
+        x.append(roadUsage * 0.01)
+
+plotx,ploty, = np.meshgrid(np.linspace(np.min(x),np.max(x),10),\
+                           np.linspace(np.min(y),np.max(y),10))
+plotz = interp.griddata((x,y),z,(plotx,ploty),method='linear')
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_surface(plotx,ploty,plotz,cstride=1,rstride=1,cmap=cm.coolwarm)
+ax.set_xlabel('roadUsage') 
+ax.set_ylabel('lightGreenTime')
+ax.set_zlabel('averageTimeStopped')
+plt.show()
+# END = time.clock()
