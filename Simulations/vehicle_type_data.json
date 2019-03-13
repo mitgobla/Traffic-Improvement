@@ -1,0 +1,82 @@
+{
+    "Car": {
+        "length": [
+            4.2,
+            4.8
+        ],
+        "acceleration": [
+            3,
+            4
+        ]
+    },
+    "Truck": {
+        "length": [
+            5.3,
+            6.2
+        ],
+        "acceleration": [
+            1.4,
+            2.5
+        ]
+    },
+    "LCV": {
+        "length": [
+            7.15,
+            7.82
+        ],
+        "acceleration": [
+            0.8,
+            1.4
+        ]
+    },
+    "Articulated HGV": {
+        "length": [
+            12.5,
+            16.5
+        ],
+        "acceleration": [
+            0.6,
+            0.8
+        ]
+    },
+    "Rigid HGV": {
+        "length": [
+            13.0,
+            15.5
+        ],
+        "acceleration": [
+            0.6,
+            0.8
+        ]
+    },
+    "Short Bus": {
+        "length": [
+            5.5,
+            9.0
+        ],
+        "acceleration": [
+            0.7,
+            1.2
+        ]
+    },
+    "Long Bus": {
+        "length": [
+            9.0,
+            15.0
+        ],
+        "acceleration": [
+            0.7,
+            1
+        ]
+    },
+    "Motorcycle": {
+        "length": [
+            1.8,
+            2.6
+        ],
+        "acceleration": [
+            3,
+            7
+        ]
+    }
+}
