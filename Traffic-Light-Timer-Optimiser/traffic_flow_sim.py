@@ -16,6 +16,7 @@ class TrafficEnvironment(object):
         self.timeLtoL = 15
         self.timeUpQueue = 2
         self.timeGreen = 5
+        self.simTime = 5000
         self.trafficLightDetectMovement = True
         self.trafficLightsToCreate = [["A"],["B"]]
         self.chanceVehicleSpawnPerUnitTime = 0.2
@@ -26,7 +27,7 @@ class TrafficEnvironment(object):
     def start_simulation(self):
         self.create_system()
 
-        self.environment.run(until=5000)
+        self.environment.run(until=self.simTime)
 
         # print(len(self.trafficLightsList[0].vehiclesAtLight))
         # print(len(self.trafficLightsList[1].vehiclesAtLight))
