@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="refresh" content="1">
+    <title>Traffic Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="../static/main.css">
+    <script src="../static/main.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container-fluid">
+        <h3>Currently Running Simulation</h3>
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" style="width: {{ percentageDone }}%;"
+                        aria-valuenow="{{ percentageDone }}" aria-valuemin="0" aria-valuemax="100">{{ percentageDone }}%
+                    </div>
+                </div>
+                <p style="text-align: center">Iterations Done / Total Iterations</p>
+                <p style="text-align: center">{{ currentIteration }} / {{ totalIterations }}</p>
+            </div>
+        </div>
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Current Environment</h5>
+                <p class="card-text">Distance Between Lights: {{ distanceLtoL }}m</p>
+                <p class="card-text">Speed Limit Between Lights: {{ speedLimitLtoL }}mph</p>
+                <p class="card-text">Time for Vehicle To Move Up Queue: {{ timeUpQueue }}s</p>
+                <p class="card-text">Time per Iteration of Simulation: {{ simTime }}s</p>
+                <p class="card-text">Traffic Lights See Lack of Movement: {{ lightsDetectMovement }}</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

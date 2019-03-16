@@ -13,60 +13,89 @@
 </head>
 
 <body>
-    <div class="container-fluid" style="font-family: sans-serif">
-        <h2>
-            Create A Traffic Environment
-        </h2>
+    <!-- Nav tabs -->
+    <div class="container-fluid pt-4">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Traffic System Control</h4>
+                <nav class="navbar navbar-expand-lg navbar-dark bg-dark rounded">
+                <ul class="nav ">
+                <li class="nav-item">
+                <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                <a class="nav-link active" href="/env_creation"><u>EnvCreation</u></a>
+                </li>
+                </ul>
+                </nav>
+            </div>
+        </div>
     </div>
     <form method="POST" action="/simulate">
-        <div class="container-fluid rounded"
-            style="padding: 10px; background-color: rgb(240, 240, 240); border-radius: 15px; margin-left:2%; margin-right:2%; width:96%">
-            <h5 style="font-family: sans-serif">Environment Setup</h5>
-            <div style="text-align: center">
-                <p style="display: inline-block">Time for Vehicle To Travel Between Lights (1-60 seconds):</p>
-                <input class="input" id="timeLtoL" name="timeLtoL" type="number" value="15" min="1" , max="60"
-                    style="display: inline-block">
-            </div>
-            <div style="text-align: center">
-                <p style="display: inline-block">Time for Vehicle To Move Up Queue (1-5 seconds):</p>
-                <input class="input" id="timeUpQueue" name="timeUpQueue" type="number" value="2" min="1" , max="5"
-                    style="display: inline-block">
-            </div>
-            <div style="text-align: center">
-                <input id="lightDetectMovement" name="lightDetectMovement" type="checkbox"> Traffic Lights Can Detect No
-                Vehicle Movement
-            </div>
-            <div style="text-align: center">
-                <p style="display: inline-block">Time for Simulation to Run for each Setup (seconds)</p>
-            <input id="simTime" name="simTime" type="number" value="5000" min=0 max="999999" style="display: inline-block"></div>
-        </div>
-        <div class="container-fluid rounded"
-            style="padding: 10px; background-color: rgb(240, 240, 240); border-radius: 15px; margin-top: 1%; margin-left:2%; margin-right:2%; width:96%">
-            <h5 style="font-family: sans-serif">Testing Setup</h5>
-            <div style="text-align: center">
-                <p style="display: inline-block">Range of Time Traffic Light Green (1-240 seconds):</p>
-                <input class="input" id="lightGreenTimeStart" name="lightGreenTimeStart" type="number" value="5" min="1"
-                    , max="240" style="display: inline-block">
-                <p style="display: inline-block"> to </p>
-                <input class="input" id="lightGreenTimeEnd" name="lightGreenTimeEnd" type="number" value="60" min="1" ,
-                    max="240" style="display: inline-block">
-            </div>
-            <div style="text-align: center">
-                <p style="display: inline-block">Range of Chance Vehicle Added (0-1 per second):</p>
-                <input class="input" id="chanceVehicleAddedStart" name="chanceVehicleAddedStart" type="number"
-                    value="0.05" min="0" max="1" step="0.05" style="display: inline-block">
-                <p style="display: inline-block"> to </p>
-                <input class="input" id="chanceVehicleAddedEnd" name="chanceVehicleAddedEnd" type="number" value="0.3"
-                    min="0" max="1" step="0.05" style="display: inline-block">
+        <div class="container-fluid mt-4">
+                <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Environment Setup</h5>
+                            <div style="text-align: center">
+                                <p style="display: inline-block">Time for Vehicle To Travel Between Lights (1-60 seconds):</p>
+                                <input class="input" id="timeLtoL" name="timeLtoL" type="number" value="15" min="1" , max="60"
+                                    style="display: inline-block">
+                                <div style="text-align: center">
+                                    <p style="display: inline-block">Time for Vehicle To Move Up Queue (1-5 seconds):</p>
+                                    <input class="input" id="timeUpQueue" name="timeUpQueue" type="number" value="2" min="1" , max="5"
+                                        style="display: inline-block">
+                                </div>
+                                <div style="text-align: center">
+                                    <input id="lightDetectMovement" name="lightDetectMovement" type="checkbox"> Traffic Lights Can Detect No
+                                    Vehicle Movement
+                                </div>
+                                <div style="text-align: center">
+                                    <p style="display: inline-block">Time for Simulation to Run for each Setup (seconds)</p>
+                                <input id="simTime" name="simTime" type="number" value="5000" min=0 max="999999" style="display: inline-block"></div>
+                        </div>
+                        </div>            
             </div>
         </div>
-        <div class="container-fluid rounded"
-            style="text-align: center; padding: 10px; background-color: rgb(240, 240, 240); border-radius: 15px; margin-top: 1%; margin-left:2%; margin-right:2%; width:96%">
-            <button type="submit">
-                <span>Simulate Environment</span>
-            </button>
+        <div class="container-fluid mt-4">
+                <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Testing Setup</h5>
+                            <div style="text-align: center">
+                                <p style="display: inline-block">Range of Time Traffic Light Green (1-240 seconds):</p>
+                                <input class="input" id="lightGreenTimeStart" name="lightGreenTimeStart" type="number" value="5" min="1"
+                                    , max="240" style="display: inline-block">
+                                <p style="display: inline-block"> to </p>
+                                <input class="input" id="lightGreenTimeEnd" name="lightGreenTimeEnd" type="number" value="60" min="1" ,
+                                    max="240" style="display: inline-block">
+                            </div>
+                            <div style="text-align: center">
+                                <p style="display: inline-block">Range of Chance Vehicle Added (0-1 per second):</p>
+                                <input class="input" id="chanceVehicleAddedStart" name="chanceVehicleAddedStart" type="number"
+                                    value="0.05" min="0" max="1" step="0.05" style="display: inline-block">
+                                <p style="display: inline-block"> to </p>
+                                <input class="input" id="chanceVehicleAddedEnd" name="chanceVehicleAddedEnd" type="number" value="0.3"
+                                    min="0" max="1" step="0.05" style="display: inline-block">
+                            </div>
+                            </div>
+                </div>
+        </div>
+        <div class="container-fluid mt-4">
+            <div class="card">
+                <div class="card-body">
+                    <button type="submit" class="btn btn-block btn-success">Start Simulation</button>
+                </div>
+            </div>
         </div>
     </form>
+    <footer class="container-fluid pt-4 pb-4">
+    
+            <div class="card border border-primary ">
+                <div class="card-body text-dark text-center">
+                    <p class="card-text">Created by Edward Upton & Ben Dodd</p>
+                </div>
+            </div>
+        
+          </footer>
 </body>
 
 </html>

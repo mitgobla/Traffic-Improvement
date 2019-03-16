@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Traffic Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="../static/main.css">
+    <script src="../static/main.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container-fluid mt-4">
+        <form method="POST" action="/simulate/submit">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Traffic Environment Setup</h5>
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-8">
+                                <p>Distance between two lights (metres).</p>
+                            </div>
+                            <div class="col-4">
+                                <input name="distanceLtoL" name="distanceLtoL" type="number" class="form-control" min="3" max="500"
+                                    value="15">
+                            </div>
+                        </div>
+
+                        <div class="row mt-2">
+                            <div class="col-8">
+                                <p>Speed limit between lights (mph).</p>
+                            </div>
+                            <div class="col-4">
+                                <input name="speedLimitLtoL" type="number" class="form-control" min="5" max="50"
+                                    value="20">
+                            </div>
+                        </div>
+
+                        <div class="row mt-2">
+                            <div class="col-8">
+                                <p>Time taken for car to move up one position in the queue (seconds)</p>
+                            </div>
+                            <div class="col-4">
+                                <input name="timeUpQueue" type="number" class="form-control" min="1" max="5" value="2">
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-8">
+                                <p>Traffic Lights able to see if vehicles moving.</p>
+                            </div>
+                            <div class="col-4">
+                                <input name="lightsDetectMovement" type="checkbox" class="form-control" checked>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Simulation Setup</h5>
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-8">
+                                <p>Simulation time for each iteration</p>
+                            </div>
+                            <div class="col-4">
+                                <input name="simTime" type="number" class="form-control" min="1000" max="99999" value="5000">
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <p>Range of how long traffic lights are green for testing (seconds).</p>
+                            </div>
+                            <div class="col-3">
+                                <input name="lightGreenTimeStart" type="number" class="form-control" min="1" max="240"
+                                    value="5">
+                            </div>
+                            <div class="col-3">
+                                <input name="lightGreenTimeEnd" type="number" class="form-control" min="1" max="240"
+                                    value="60">
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <p>Range of road busyness for testing (cars per second).</p>
+                            </div>
+                            <div class="col-3">
+                                <input name="roadUsageStart" type="number" class="form-control" min="0.05" max="1"
+                                    step="0.05" value="0.05">
+                            </div>
+                            <div class="col-3">
+                                <input name="roadUsageEnd" type="number" class="form-control" min="0.05" max="1"
+                                    step="0.05" value="0.30">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col"></div>
+                            <div class="col">
+                                <button type="submit" class="btn btn-outline-secondary">Run Simulation</button>
+                            </div>
+                            <div class="col"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</body>
+
+</html>
