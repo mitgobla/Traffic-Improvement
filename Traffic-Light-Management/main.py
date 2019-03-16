@@ -5,7 +5,8 @@ import io
 
 from flask import Flask, request, render_template, redirect, Response
 from flask_classful import FlaskView, route
-
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.mlab import griddata
