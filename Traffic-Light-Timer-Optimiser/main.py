@@ -5,6 +5,8 @@ import os
 
 import traffic_flow_sim
 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.mlab import griddata

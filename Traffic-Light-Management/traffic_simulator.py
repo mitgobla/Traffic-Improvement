@@ -37,7 +37,6 @@ class TrafficEnvironment(object):
         self.roadUsage = roadUsage
 
 
-
     def start_simulation(self):
         self.create_system()
 
