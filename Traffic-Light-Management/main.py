@@ -79,8 +79,8 @@ class SimulationThread(threading.Thread):
         self.simTime = simTime
         self.lightGreenTimesRange = lightGreenTimesRange
         self.roadUsageRange = roadUsagesRange
-        self.timeGreenStep = 5
-        self.roadUsageStep = 0.05
+        self.timeGreenStep = 2
+        self.roadUsageStep = 0.02
 
         self.numberOfIterations = round((((self.roadUsageRange[1]-self.roadUsageRange[0])/self.roadUsageStep)+2)*(((self.lightGreenTimesRange[1]-self.lightGreenTimesRange[0])/self.timeGreenStep)+2))
     
