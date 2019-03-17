@@ -2,7 +2,7 @@
 
 Sixth Form Raspberry Pi Project for PAConsulting.com
 
-## Summary Test
+## Summary
 
 Traffic-Improvement is software used to reduce waiting times at a traffic light system by comparing many factors that affect traffic flow, and then calculating the most efficient traffic light cycle timings to use. The Raspberry Pi is used to control the traffic lights, and runs a web interface that allows an engineer to change variables for that traffic system.
 
