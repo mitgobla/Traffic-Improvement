@@ -124,3 +124,8 @@ Here are some images of the project:
 5. On a web browser on a device that is connected to the same network as the Raspberry Pi, navigate to the IP address you recorded earlier (the IP address of the Raspberry Pi).
 
 6. The web interface to configure the simulation should appear.
+
+## Authors
+
+Edward Upton (engiego)
+Ben Dodd (mitgobla)
