@@ -3,4 +3,5 @@ numpy
 scipy
 simpy
 pillow
+flask
 flask-classful
