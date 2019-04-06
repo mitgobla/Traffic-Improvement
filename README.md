@@ -41,7 +41,7 @@ Here are some images of the project:
 
 - Flask Web Interface
 
-![FlaskInterface](/docs/flaskinterface.png)
+![FlaskInterface](/docs/flask_interface.png)
 
 ## Software & Hardware
 
