@@ -127,5 +127,6 @@ Here are some images of the project:
 
 ## Authors
 
-Edward Upton (engiego)
-Ben Dodd (mitgobla)
+Edward Upton ([engiego](https://www.github.com/engiego))
+
+Ben Dodd ([mitgobla](https://www.github.com/mitgobla))
