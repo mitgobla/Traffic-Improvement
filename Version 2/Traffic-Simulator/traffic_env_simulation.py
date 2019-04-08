@@ -3,6 +3,8 @@ import time
 import itertools
 
 # sim.random_seed = 123
+VIEWPORT_RESOLUTION = [2560,1600]
+STATE_COLOURS_DICT = {"states":[{"state":"red", "rgb":(255,0,0)},{"state":"green", "rgb":(0,255,0)}]}
 
 class TrafficEnvironment():
     def __init__(self):
@@ -14,7 +16,7 @@ class TrafficEnvironment():
         self.timeLtoLSafety = 20
         self.timeLightGreen = 40
         self.timeUpQueue = 2
-        self.vehicleGenerateChance = 0.3
+        self.vehicleGenerateChance = 0.35
         self.vehicleMeanPeriod = 1/self.vehicleGenerateChance
 
 class VehicleGenerator(sim.Component):
@@ -102,7 +104,37 @@ env = sim.Environment(trace=False)
 trafficEnv = TrafficEnvironment()
 trafficManagement = TrafficManagement(trafficEnv=trafficEnv)
 VehicleGenerator = VehicleGenerator(trafficEnv=trafficEnv)
-env.run(till=5000)
+
+def check_light_state(light, state):
+    if light.state.value() == state:
+        for stateDict in STATE_COLOURS_DICT["states"]:
+            if stateDict["state"] == state:
+                return stateDict["rgb"]+tuple([255])
+    else:
+        for stateDict in STATE_COLOURS_DICT["states"]:
+            if stateDict["state"] == state:
+                return stateDict["rgb"]+tuple([60])
+    
+        
+
+numberOfLights = len(trafficEnv.lightList)
+sim.AnimateText(text="Traffic Environment Simulation", x=10, y=728, textcolor='20%gray', fontsize=30)
+sim.AnimateText(text="Light A", x=10, y=700, textcolor='20%gray', fontsize=20)
+sim.AnimateRectangle(spec=(10, 530, 70, 690), fillcolor='black')
+sim.AnimateCircle(radius=20, x=40, y=660, fillcolor=lambda: check_light_state(trafficEnv.lightList[0], 'red'))
+sim.AnimateCircle(radius=20, x=40, y=610, fillcolor=lambda: check_light_state(trafficEnv.lightList[0], 'red'))
+sim.AnimateCircle(radius=20, x=40, y=560, fillcolor=lambda: check_light_state(trafficEnv.lightList[0], 'green'))
+sim.AnimateRectangle(spec=(83,650,786,714), linecolor='90%gray', linewidth=2, fillcolor='whitesmoke')
+sim.AnimateQueue(trafficEnv.lightList[0].vehiclesQueue, x=110, y=674, title='Queue', direction='e', max_length=14)
+sim.AnimateRectangle(spec=(83,525,786,646), linecolor='90%gray', linewidth=2, fillcolor='whitesmoke')
+sim.AnimateMonitor(trafficEnv.lightList[0].vehiclesQueue.length_of_stay, title="Waiting Time", x=90, y=530, width=689, height=100, horizontal_scale=5, vertical_scale=5)
+
+
+
+env.background_color('90%gray')
+env.animate(True)
+env.animation_parameters(speed=50)
+env.run()
 print("Time to run:", time.time() - time0)
 for light in trafficEnv.lightList:
     light.vehiclesQueue.print_statistics()
