@@ -2,7 +2,7 @@ import salabim as sim
 import time
 import itertools
 
-# sim.random_seed = 123
+sim.random_seed = 123
 VIEWPORT_RESOLUTION = [2560,1600]
 STATE_COLOURS_DICT = {"states":[{"state":"red", "rgb":(255,0,0)},{"state":"green", "rgb":(0,255,0)}]}
 
@@ -16,7 +16,7 @@ class TrafficEnvironment():
         self.timeLtoLSafety = 20
         self.timeLightGreen = 40
         self.timeUpQueue = 2
-        self.vehicleGenerateChance = 0.35
+        self.vehicleGenerateChance = 0.3
         self.vehicleMeanPeriod = 1/self.vehicleGenerateChance
 
 class VehicleGenerator(sim.Component):
@@ -127,8 +127,17 @@ sim.AnimateCircle(radius=20, x=40, y=560, fillcolor=lambda: check_light_state(tr
 sim.AnimateRectangle(spec=(83,650,786,714), linecolor='90%gray', linewidth=2, fillcolor='whitesmoke')
 sim.AnimateQueue(trafficEnv.lightList[0].vehiclesQueue, x=110, y=674, title='Queue', direction='e', max_length=14)
 sim.AnimateRectangle(spec=(83,525,786,646), linecolor='90%gray', linewidth=2, fillcolor='whitesmoke')
-sim.AnimateMonitor(trafficEnv.lightList[0].vehiclesQueue.length_of_stay, title="Waiting Time", x=90, y=530, width=689, height=100, horizontal_scale=5, vertical_scale=5)
+sim.AnimateMonitor(trafficEnv.lightList[0].vehiclesQueue.length_of_stay, title="Waiting Time", x=90, y=530, width=689, height=100, horizontal_scale=2, vertical_scale=1)
 
+sim.AnimateText(text="Light B", x=10, y=450, textcolor='20%gray', fontsize=20)
+sim.AnimateRectangle(spec=(10, 280, 70, 440), fillcolor='black')
+sim.AnimateCircle(radius=20, x=40, y=410, fillcolor=lambda: check_light_state(trafficEnv.lightList[1], 'red'))
+sim.AnimateCircle(radius=20, x=40, y=360, fillcolor=lambda: check_light_state(trafficEnv.lightList[1], 'red'))
+sim.AnimateCircle(radius=20, x=40, y=310, fillcolor=lambda: check_light_state(trafficEnv.lightList[1], 'green'))
+sim.AnimateRectangle(spec=(83,400,786,464), linecolor='90%gray', linewidth=2, fillcolor='whitesmoke')
+sim.AnimateQueue(trafficEnv.lightList[1].vehiclesQueue, x=110, y=424, title='Queue', direction='e', max_length=14)
+sim.AnimateRectangle(spec=(83,275,786,396), linecolor='90%gray', linewidth=2, fillcolor='whitesmoke')
+sim.AnimateMonitor(trafficEnv.lightList[1].vehiclesQueue.length_of_stay, title="Waiting Time", x=90, y=280, width=689, height=100, horizontal_scale=2, vertical_scale=1)
 
 
 env.background_color('90%gray')
