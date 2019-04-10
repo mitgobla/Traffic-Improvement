@@ -64,7 +64,6 @@ class TrafficLight(pygame.sprite.DirtySprite):
         self.text_surf = self.font.render("0", 1, (255, 255, 255), self.current_colour)
 
         self.text_w, self.text_h = self.text_surf.get_width(), self.text_surf.get_height()
-
         self.direction = direction
         if self.direction == "northbound":
             self.current_colour = next(self.colours)
@@ -81,7 +80,7 @@ class TrafficLight(pygame.sprite.DirtySprite):
 
     def update(self):
         self.frame += 1
-        if self.frame == 128:
+        if self.frame == 256:
             self.current_colour = next(self.colours)
             # self.image.fill(self.current_colour, rect=self.rect)
             self.frame = 0
@@ -105,10 +104,11 @@ class Vehicle(pygame.sprite.DirtySprite):
         self.env = env
         self.group = group
         self.name = str(name)
+        self.frame = 0
 
         self.image = pygame.Surface((16, 16))
-        self.colour = random.choice([(50, 50,  random.uniform(100, 255)), (50, random.uniform(100, 255), 50), (random.uniform(100, 255), 50, 50)])
-        # self.colour = (50, 50, random.uniform(100, 255))
+        # self.colour = random.choice([(50, 50,  random.uniform(100, 255)), (50, random.uniform(100, 255), 50), (random.uniform(100, 255), 50, 50)])
+        self.colour = (0, 255, 0)
         self.image.fill((0, 0, 0))
         self.image.set_colorkey((0, 0, 0))
 
@@ -141,6 +141,16 @@ class Vehicle(pygame.sprite.DirtySprite):
         return dict(rect=self.rect, name=self.name, direction=self.direction)
 
     def update(self):
+        if self.stopped and self.frame < 255:
+            self.frame += 1
+            self.colour = (self.frame, 255-self.frame, 0)
+            # self.image.fill(self.colour, self.rect)
+            self.rect = pygame.draw.ellipse(self.image, self.colour, self.rect)
+        elif not self.stopped and self.frame > 0:
+            self.frame -= 1
+            self.colour = (self.frame, 255-self.frame, 0)
+            # self.image.fill(self.colour, self.rect)
+            self.rect = pygame.draw.ellipse(self.image, self.colour, self.rect)
         self.move()
         if (self.rect.y < -16 and self.direction == "northbound") or (self.rect.y > 576 and self.direction == "southbound"):
             self.group.remove(self)
@@ -252,14 +262,14 @@ class SimulationGame:
                         self.running = False
 
             if random.choice(["northbound", "southbound"]) == "northbound":
-                if random.random() < 0.25 and can_spawn_northbound == 0:
+                if random.random() < 0.0150 and can_spawn_northbound == 0:
                     vehicle = Vehicle(self.env, self.vehicle_group,
                                       self.secure_random.random(), "northbound")
                     self.vehicle_group.add(vehicle)
                     self.env.add_vehicle(vehicle, "northbound")
                     can_spawn_northbound = 16
             else:
-                if random.random() < 0.025 and can_spawn_southbound == 0 and len(self.env.vehicles["southbound"]) <= 13:
+                if random.random() < 0.0150 and can_spawn_southbound == 0 and len(self.env.vehicles["southbound"]) <= 13:
                     vehicle = Vehicle(self.env, self.vehicle_group,
                                       self.secure_random.random(), "southbound")
                     self.vehicle_group.add(vehicle)
