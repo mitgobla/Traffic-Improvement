@@ -1,14 +1,6 @@
 import salabim as sim
 
-class Light(sim.Component):
-    def setup(self, lightName):
-        self.lightName = lightName
-        self.vehiclesQueue = sim.Queue(self.lightName)
+sim.random_seed = None
 
-env = sim.Environment(trace=True)
-lightList = []
-lightList.append(Light(lightName="light0"))
-lightList.append(Light(lightName="light1"))
-env.run(till=500)
-for light in lightList:
-    print(light.vehiclesQueue.name())
+for i in range(100):
+    print(sim.Uniform(1,10).sample())
