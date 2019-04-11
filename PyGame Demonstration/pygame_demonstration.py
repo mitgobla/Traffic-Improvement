@@ -84,7 +84,7 @@ class TrafficLight(pygame.sprite.DirtySprite):
 
     def update(self):
         self.frame += 1
-        if self.frame == 32:
+        if self.frame == 64:
             self.current_colour = next(self.colours)
             # self.image.fill(self.current_colour, rect=self.rect)
             self.frame = 0
@@ -156,8 +156,8 @@ class Vehicle(pygame.sprite.DirtySprite):
         if self.env.current_viewmode == "waiting":
             if self.stopped and self.frame < 253:
                 self.frame += 2
-            elif not self.stopped and self.frame > 1:
-                self.frame -= 2
+            # elif not self.stopped and self.frame > 1:
+            #     self.frame -= 2
 
             # if self.frame > 255:
             #     self.frame = 255
@@ -288,7 +288,7 @@ class SimulationGame:
                     self.env.add_vehicle(vehicle, "northbound")
                     can_spawn_northbound = 16
             else:
-                if random.random() < 0.120 and can_spawn_southbound == 0 and len(self.env.vehicles["southbound"]) <= 13:
+                if random.random() < 0.060 and can_spawn_southbound == 0 and len(self.env.vehicles["southbound"]) <= 13:
                     vehicle = Vehicle(self.env, self.vehicle_group,
                                       self.secure_random.random(), "southbound")
                     self.vehicle_group.add(vehicle)
