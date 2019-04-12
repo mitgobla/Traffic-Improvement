@@ -1,6 +1,7 @@
 import salabim as sim
 import time
 import matplotlib.pyplot as plt
+from scipy.interpolate import make_interp_spline, BSpline
 import random
 import numpy as np
 
@@ -41,7 +42,7 @@ class TrafficManagement(sim.Component):
 
 
 class TrafficEnvironment():
-    def __init__(self, lightSensorSensitivity=-1, distanceLtoL=50, timeLightGreen=15, timeUpQueue=2, busynessLightArray=[0.1,0.1]):
+    def __init__(self, lightSensorSensitivity=3, distanceLtoL=70, timeLightGreen=15, timeUpQueue=2, busynessLightArray=[0.1,0.1]):
         self.lightList = []
         self.lightSensorSensitivity = lightSensorSensitivity
         self.busynessLightArray = busynessLightArray
@@ -173,30 +174,37 @@ def setup_animation_window():
     sim.AnimateText(text=lambda: "Waiting Time Mean: " + str(round(trafficEnv.lightList[1].vehiclesQueue.length_of_stay.mean(), 1)), x=795, y=384, fontsize=15, textcolor='20%gray')
     sim.AnimateText(text=lambda: "Waiting Time Maximum: " + str(round(trafficEnv.lightList[1].vehiclesQueue.length_of_stay.maximum(), 1)), x=795, y=369, fontsize=15, textcolor='20%gray')
 
-# env.animation_parameters(speed=10)
 
-roadBusyness = [0.15,0.15]
-lightGreenTimeRange = [10, 150]
+
+roadBusyness = [0.1,0.1]
+lightGreenTimeRange = [5, 150]
 dataArray = []
 
 for i in range(lightGreenTimeRange[0], lightGreenTimeRange[1], 5):
     runningAverageTotal = 0
-    for iter in range(6):
+    for iter in range(8):
         averageWaitingTime = 0
         sim.random_seed = time.time()
         print(i)
         env = sim.Environment(trace=False, random_seed=time.time())
+        # env.animation_parameters(speed=10)
         randomDistribution = sim.Uniform(0,1)
         trafficEnv = TrafficEnvironment(busynessLightArray=roadBusyness, timeLightGreen=i)
         env.run(5000)
         averageWaitingTime = sum([trafficEnv.lightList[0].vehiclesQueue.length_of_stay.mean(), trafficEnv.lightList[1].vehiclesQueue.length_of_stay.mean()]) / 2
         runningAverageTotal += averageWaitingTime
         print(averageWaitingTime)
-    dataArray.append([i, runningAverageTotal/6])
+    dataArray.append([i, runningAverageTotal/8])
 
 x, y = zip(*dataArray)
 
-plt.plot(x, y, color='g')
+xnew = np.linspace(np.array(x).min(), np.array(x).max(), 300)
+
+spl = make_interp_spline(np.array(x), np.array(y), k=3)
+ynew = spl(xnew)
+
+
+plt.plot(xnew, ynew, color='g')
 plt.xlabel('Light Green Time')
 plt.ylabel('Average Waiting Time')
 plt.show()
