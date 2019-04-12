@@ -106,7 +106,7 @@ class SimulationThread(threading.Thread):
         minimasx = []
         minimasy = []
         minimasz = []
-        for roadUsage in np.arange(self.roadUsageRange[0], self.roadUsageRange[1]+0.02, 0.02):
+        for roadUsage in np.arange(self.roadUsageRange[0], self.roadUsageRange[1]+self.roadUsageStep, self.roadUsageStep):
             indexesAtCurrentRoadUsage = []
             for index1 in range(len(x)):
                 if x[index1] == roadUsage:
