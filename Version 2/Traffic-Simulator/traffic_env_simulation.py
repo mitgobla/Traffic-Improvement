@@ -187,7 +187,7 @@ for i in range(lightGreenTimeRange[0], lightGreenTimeRange[1], 5):
         sim.random_seed = time.time()
         print(i)
         env = sim.Environment(trace=False, random_seed=time.time())
-        # env.animation_parameters(speed=10)
+        env.animation_parameters(speed=10)
         randomDistribution = sim.Uniform(0,1)
         trafficEnv = TrafficEnvironment(busynessLightArray=roadBusyness, timeLightGreen=i)
         env.run(5000)
