@@ -42,7 +42,7 @@ class TrafficManagement(sim.Component):
 
 
 class TrafficEnvironment():
-    def __init__(self, lightSensorSensitivity=3, distanceLtoL=70, timeLightGreen=15, timeUpQueue=2, busynessLightArray=[0.1,0.1]):
+    def __init__(self, lightSensorSensitivity=-1, distanceLtoL=50, timeLightGreen=15, timeUpQueue=2, busynessLightArray=[0.1,0.1]):
         self.lightList = []
         self.lightSensorSensitivity = lightSensorSensitivity
         self.busynessLightArray = busynessLightArray
@@ -176,13 +176,13 @@ def setup_animation_window():
 
 
 
-roadBusyness = [0.1,0.1]
-lightGreenTimeRange = [5, 150]
+roadBusyness = [0.2,0.2]
+lightGreenTimeRange = [30, 150]
 dataArray = []
 
 for i in range(lightGreenTimeRange[0], lightGreenTimeRange[1], 5):
     runningAverageTotal = 0
-    for iter in range(8):
+    for iter in range(20):
         averageWaitingTime = 0
         sim.random_seed = time.time()
         print(i)
@@ -194,7 +194,7 @@ for i in range(lightGreenTimeRange[0], lightGreenTimeRange[1], 5):
         averageWaitingTime = sum([trafficEnv.lightList[0].vehiclesQueue.length_of_stay.mean(), trafficEnv.lightList[1].vehiclesQueue.length_of_stay.mean()]) / 2
         runningAverageTotal += averageWaitingTime
         print(averageWaitingTime)
-    dataArray.append([i, runningAverageTotal/8])
+    dataArray.append([i, runningAverageTotal/20])
 
 x, y = zip(*dataArray)
 
