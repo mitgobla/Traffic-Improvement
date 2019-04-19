@@ -1,5 +1,7 @@
 # Traffic-Improvement
 
+<img src="docs/logo.png" width="256" height="256">
+
 Sixth Form Raspberry Pi Project for PAConsulting.com
 
 ## Summary
