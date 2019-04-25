@@ -9,8 +9,10 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 
 class HomeView(FlaskView):
-    route_base='/home'
+    route_base='/'
 
     def index(self):
         return render_template('home.html')
 
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=80, debug=debug)
