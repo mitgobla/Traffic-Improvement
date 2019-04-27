@@ -15,32 +15,14 @@
 <body>
     <div class="container-fluid mt-4 text-center">
         <img src="../static/images/Main Logo.png" style="max-width: 20%">
-        <h3 style="display: inline-block">Home</h3>
+        <h3 style="display: inline-block">Optimisation Results</h3>
     </div>
-    <div class="container-fluid mt-4">
-        <div class="card-deck">
-            <div class="card mb-3" style="max-width: 18rem; margin: auto;">
-                <div class='card-body'>
-                    <a style="display: block; color: black" href="/get-timings">
-                        <img src="../static/images/TimingsIcon.png" class="card-img-top" style="padding: 5px;">
-                        <h5 class="card-title">Get Timings</h5>
-                        <p class="card-text">Find the optimal timings for a traffic environment.</p>
-                    </a>
-                </div>
-            </div>
-            <div class="card mb-3" style="max-width: 18rem; margin: auto;">
-                <div class="card-body">
-                    <a style="display: block; color: black" href="/use-timings">
-                        <img src="../static/images/RunTimingsIcon.png" class="card-img-top" style="padding: 5px;">
-                        <h5 class="card-title">Use Timings</h5>
-                        <p class='card-text'>Apply the timings to a traffic simulation.</p>
-                    </a>
-
-                </div>
-            </div>
-        </div>
+    <div style="padding: 5px; text-align: center;">
+        <h4>Here are the Results for The Traffic Environment</h4>
+        <img src='../static/images/{{ graphName }}'>
+        <h5>Best Time For Light To Be on Green: {{ bestTiming }} seconds</h5>
+        <h5>with average waiting time of: {{ leastWaitingTime }} seconds</h5>
     </div>
-
 
     <footer class="container-fluid pt-4 pb-4">
 
