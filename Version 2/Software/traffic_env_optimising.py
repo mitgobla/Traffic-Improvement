@@ -6,6 +6,7 @@ import random
 import numpy as np
 import uuid
 import os
+import pickle
 
 CWD = os.path.dirname(os.path.realpath(__file__))
 
@@ -148,21 +149,20 @@ def run_optimisation(envData, optData):
 
     ymin = min(y)
     xmin = x[y.index(ymin)]
-
-    print(ymin)
-    print(xmin)
     # xnew = np.linspace(np.array(x).min(), np.array(x).max(), 300)
 
     # spl = make_interp_spline(np.array(x), np.array(y), k=3)
     # ynew = spl(xnew)
-    print(x, y)
-
     plt.plot(x, y, color='g')
     plt.xlabel('Light Green Time')
     plt.ylabel('Average Waiting Time')
     pltFileName = str(uuid.uuid4().hex) + '.png'
-    with open(os.path.join(CWD, 'static', 'images', pltFileName), 'wb') as tempPltImgFile:
+
+    resData = envData
+    resData['optimalGreenTime'] = float(xmin)
+    resData['averageWaitingTime'] = float(ymin)
+    resData['graphFileName'] = pltFileName
+    with open(os.path.join(CWD, 'static', 'images', 'graphImages', pltFileName), 'wb') as tempPltImgFile:
         plt.savefig(tempPltImgFile)
-    with open(os.path.join(CWD, 'TempData', 'tempOptimisationData.txt'), 'w') as tempDataFile:
-        tempDataFile.write(str(xmin) + ',' + str(ymin) + ',' + pltFileName)
-    return [xmin, ymin, pltFileName]
+    with open(os.path.join(CWD, 'TempData', 'optimisationResults.pkl'), 'wb') as tempDataFile:
+        pickle.dump(resData, tempDataFile, pickle.HIGHEST_PROTOCOL)

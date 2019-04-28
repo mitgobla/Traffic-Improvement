@@ -4,8 +4,14 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import make_interp_spline, BSpline
 import random
 import numpy as np
+import uuid
+import os
+import pickle
+
+CWD = os.path.dirname(os.path.realpath(__file__))
 
 VIEWPORT_RESOLUTION = [2560,1600]
+PERCENTAGE_TIME_SAFETY_ADDITION = 0.2
 STATE_COLOURS_DICT = {"states":[{"state":"red", "rgb":(255,0,0)},{"state":"redamber","rgb":(255,191,0)},{"state":"green", "rgb":(0,255,0)},{"state":"amber","rgb":(255,191,0)}]}
 
 class VehicleSpawner(sim.Component):
@@ -13,12 +19,11 @@ class VehicleSpawner(sim.Component):
         self.trafficEnv = trafficEnv
         self.lightList = trafficEnv.lightList
         self.randomUniform = sim.Uniform(0,1)
-        print(self.randomUniform.sample())
     def process(self):
         while True:
             for light in self.lightList:
                 if light.busyness > self.randomUniform.sample():
-                    Vehicle(light=light, trafficEnv=trafficEnv)
+                    Vehicle(light=light, trafficEnv=self.trafficEnv)
             yield self.hold(1)
 
 class TrafficManagement(sim.Component):
@@ -42,22 +47,20 @@ class TrafficManagement(sim.Component):
 
 
 class TrafficEnvironment():
-    def __init__(self, lightSensorSensitivity=-1, distanceLtoL=50, timeLightGreen=15, timeUpQueue=2, busynessLightArray=[0.1,0.1]):
+    def __init__(self, envData, timeLightGreen):
         self.lightList = []
-        self.lightSensorSensitivity = lightSensorSensitivity
-        self.busynessLightArray = busynessLightArray
         for lightNum in range(2):
-            self.lightList.append(Light(sensitivity=self.lightSensorSensitivity, busyness=self.busynessLightArray[lightNum]))
+            self.lightList.append(Light(sensitivity=envData['lightData'][lightNum]['sensorSensitivity'], busyness=envData['lightData'][lightNum]['busyness']))
         self.roadBetween = RoadBetween()
-        self.distanceLtoL = distanceLtoL
-        self.timeLtoL = 5
-        self.timeLtoLSafety = self.distanceLtoL / 10
+        self.distanceLtoL = envData['lightDistance']
+        self.speed = envData['speed'] / 2.237
+        self.timeLtoL = self.distanceLtoL / self.speed
+        self.timeLtoLSafety = self.timeLtoL * (1 + PERCENTAGE_TIME_SAFETY_ADDITION)
         self.timeLightGreen = timeLightGreen
-        self.timeUpQueue = 2
+        self.timeUpQueue = envData['timeUpQueue']
 
         self.vehicleSpawner = VehicleSpawner(trafficEnv=self)
         self.trafficManagement = TrafficManagement(trafficEnv=self)
-
 
 
 class RoadBetween(sim.Component):
@@ -126,6 +129,7 @@ class Vehicle(sim.Component):
                 self.movedState.set(False)
                 self.process()
 
+
 def check_light_state(light, state):
     if light.state.value() == state:
         for stateDict in STATE_COLOURS_DICT["states"]:
@@ -136,7 +140,7 @@ def check_light_state(light, state):
             if stateDict["state"] == state:
                 return stateDict["rgb"]+tuple([60])
 
-def setup_animation_window():
+def setup_animation_window(trafficEnv, env):
     env.background_color('90%gray')
     sim.AnimateText(text="Traffic Environment Simulation", x=10, y=728, textcolor='20%gray', fontsize=30)
 
@@ -174,37 +178,9 @@ def setup_animation_window():
     sim.AnimateText(text=lambda: "Waiting Time Mean: " + str(round(trafficEnv.lightList[1].vehiclesQueue.length_of_stay.mean(), 1)), x=795, y=384, fontsize=15, textcolor='20%gray')
     sim.AnimateText(text=lambda: "Waiting Time Maximum: " + str(round(trafficEnv.lightList[1].vehiclesQueue.length_of_stay.maximum(), 1)), x=795, y=369, fontsize=15, textcolor='20%gray')
 
-
-
-roadBusyness = [0.2,0.2]
-lightGreenTimeRange = [30, 150]
-dataArray = []
-
-for i in range(lightGreenTimeRange[0], lightGreenTimeRange[1], 5):
-    runningAverageTotal = 0
-    for iter in range(20):
-        averageWaitingTime = 0
-        sim.random_seed = time.time()
-        print(i)
-        env = sim.Environment(trace=False, random_seed=time.time())
-        env.animation_parameters(speed=10)
-        randomDistribution = sim.Uniform(0,1)
-        trafficEnv = TrafficEnvironment(busynessLightArray=roadBusyness, timeLightGreen=i)
-        env.run(5000)
-        averageWaitingTime = sum([trafficEnv.lightList[0].vehiclesQueue.length_of_stay.mean(), trafficEnv.lightList[1].vehiclesQueue.length_of_stay.mean()]) / 2
-        runningAverageTotal += averageWaitingTime
-        print(averageWaitingTime)
-    dataArray.append([i, runningAverageTotal/20])
-
-x, y = zip(*dataArray)
-
-xnew = np.linspace(np.array(x).min(), np.array(x).max(), 300)
-
-spl = make_interp_spline(np.array(x), np.array(y), k=3)
-ynew = spl(xnew)
-
-
-plt.plot(xnew, ynew, color='g')
-plt.xlabel('Light Green Time')
-plt.ylabel('Average Waiting Time')
-plt.show()
+def run_simulation(resData):
+    env = sim.Environment(trace=False, random_seed=time.time())
+    env.animation_parameters(speed=10)
+    trafficEnv = TrafficEnvironment(resData, resData['optimalGreenTime'])
+    setup_animation_window(trafficEnv, env)
+    env.run(5000)

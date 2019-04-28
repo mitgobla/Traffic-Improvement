@@ -2,8 +2,10 @@ import os
 from flask import Flask, request, render_template, redirect, Response
 from flask_classful import FlaskView, route
 import threading
+import pickle
 
 import traffic_env_optimising
+import traffic_env_running
 
 CWD = os.path.dirname(os.path.realpath(__file__))
 
@@ -58,39 +60,59 @@ class GetTimingsView(FlaskView):
                                 'lightGreenTimeStep':self.greenTimeStep,
                                 'iterationsPerSetting':5}
 
-        self.simulationThread = SimulationThread(self.environmentData, self.optimisationData)
-        self.simulationThread.name = "simThread"
+        self.simulationThread = OptimisationThread(self.environmentData, self.optimisationData)
+        self.simulationThread.name = "optThread"
         self.simulationThread.start()
         return redirect("/get-timings/optimisation-running")
 
     @route('/optimisation-running')
     def running_optimisation(self):
         activeThreadNames = list(thread.name for thread in threading.enumerate())
-        if "simThread" in activeThreadNames:
-            simThread = threading.enumerate()[activeThreadNames.index("simThread")]
+        if "optThread" in activeThreadNames:
+            simThread = threading.enumerate()[activeThreadNames.index("optThread")]
             return render_template('optimisation-running.html', envData = simThread.envData, optData = simThread.optData)
         else:
             return redirect('/get-timings/results')
     
     @route('/results')
     def finished_optimising(self):
-        with open(os.path.join(CWD, 'TempData', 'tempOptimisationData.txt'), 'r') as tempData:
-            dataString = tempData.read()
-        bestLightGreenTime = float(dataString.split(',')[0])
-        lowestWaitingTime = float(dataString.split(',')[1])
-        graphFileName = dataString.split(',')[2]
+        with open(os.path.join(CWD, 'TempData', 'optimisationResults.pkl'), 'rb') as tempData:
+            optResults = pickle.load(tempData)
+        bestLightGreenTime = optResults['optimalGreenTime']
+        lowestWaitingTime = optResults['averageWaitingTime']
+        graphFileName = optResults['graphFileName']
         return render_template('optimisation-results.html', bestTiming = str(bestLightGreenTime), leastWaitingTime = str(round(lowestWaitingTime, 1)), graphName = graphFileName)
 
-class SimulationThread(threading.Thread):
+class SimulationView(FlaskView):
+    route_base='/use-timings'
+
+    @route('/simulation', methods=['POST','GET'])
+    def index(self):
+        with open(os.path.join(CWD, 'TempData', 'optimisationResults.pkl'), 'rb') as tempData:
+            optResults = pickle.load(tempData)
+        self.simThread = SimulationThread(optResults)
+        self.simThread.start()
+        return render_template('simulation.html')
+
+class OptimisationThread(threading.Thread):
     def __init__(self, envData, optData):
         threading.Thread.__init__(self)
         self.envData = envData
         self.optData = optData
     def run(self):
-        self.optimisationResults = traffic_env_optimising.run_optimisation(self.envData, self.optData)
+        traffic_env_optimising.run_optimisation(self.envData, self.optData)
+
+class SimulationThread(threading.Thread):
+    def __init__(self, resData):
+        threading.Thread.__init__(self)
+        self.resData = resData
+    
+    def run(self):
+        traffic_env_running.run_simulation(self.resData)
 
 HomeView.register(app)
 GetTimingsView.register(app)
+SimulationView.register(app)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80, debug=debug)
