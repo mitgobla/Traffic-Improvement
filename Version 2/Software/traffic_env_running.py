@@ -7,12 +7,20 @@ import numpy as np
 import uuid
 import os
 import pickle
+import pigpio
+import time
+
+controller = pigpio.pi()
+
+red = controller.set_PWM_dutycycle(17,0)
+amber = controller.set_PWM_dutycycle(27,0)
+greeen = controller.set_PWM_dutycycle(22,0)
 
 CWD = os.path.dirname(os.path.realpath(__file__))
 
 VIEWPORT_RESOLUTION = [2560,1600]
 PERCENTAGE_TIME_SAFETY_ADDITION = 0.2
-STATE_COLOURS_DICT = {"states":[{"state":"red", "rgb":(255,0,0)},{"state":"redamber","rgb":(255,191,0)},{"state":"green", "rgb":(0,255,0)},{"state":"amber","rgb":(255,191,0)}]}
+STATE_COLOURS_DICT = {"states":[{"state":"red", "rgb":(255,0,0), "pin":[17]},{"state":"redamber","rgb":(255,191,0), "pin":[17, 27]},{"state":"green", "rgb":(0,255,0), "pin":[22]},{"state":"amber","rgb":(255,191,0), "pin":[27]}]}
 
 class VehicleSpawner(sim.Component):
     def setup(self, trafficEnv):
@@ -130,14 +138,20 @@ class Vehicle(sim.Component):
                 self.process()
 
 
-def check_light_state(light, state):
+def check_light_state(light, state, updateRealLight):
     if light.state.value() == state:
         for stateDict in STATE_COLOURS_DICT["states"]:
             if stateDict["state"] == state:
+                if updateRealLight:
+                    for pin in stateDict["pin"]:
+                        controller.set_PWM_dutycycle(pin,255)
                 return stateDict["rgb"]+tuple([255])
     else:
         for stateDict in STATE_COLOURS_DICT["states"]:
             if stateDict["state"] == state:
+                if updateRealLight:
+                    for pin in stateDict["pin"]:
+                        controller.set_PWM_dutycycle(pin,0)
                 return stateDict["rgb"]+tuple([60])
 
 def setup_animation_window(trafficEnv, env):
@@ -147,9 +161,9 @@ def setup_animation_window(trafficEnv, env):
     # Animation setup for Light A
     sim.AnimateText(text="Light A", x=10, y=700, textcolor='20%gray', fontsize=20)
     sim.AnimateRectangle(spec=(10, 530, 70, 690), fillcolor='black')
-    sim.AnimateCircle(radius=20, x=40, y=660, fillcolor=lambda: check_light_state(trafficEnv.lightList[0], 'red'))
-    sim.AnimateCircle(radius=20, x=40, y=610, fillcolor=lambda: check_light_state(trafficEnv.lightList[0], 'amber'))
-    sim.AnimateCircle(radius=20, x=40, y=560, fillcolor=lambda: check_light_state(trafficEnv.lightList[0], 'green'))
+    sim.AnimateCircle(radius=20, x=40, y=660, fillcolor=lambda: check_light_state(trafficEnv.lightList[0], 'red', True))
+    sim.AnimateCircle(radius=20, x=40, y=610, fillcolor=lambda: check_light_state(trafficEnv.lightList[0], 'amber', True))
+    sim.AnimateCircle(radius=20, x=40, y=560, fillcolor=lambda: check_light_state(trafficEnv.lightList[0], 'green', True))
     sim.AnimateRectangle(spec=(83,650,786,714), linecolor='90%gray', linewidth=2, fillcolor='whitesmoke')
     sim.AnimateQueue(trafficEnv.lightList[0].vehiclesQueue, x=110, y=674, title='Queue', direction='e', max_length=14)
     sim.AnimateRectangle(spec=(83,525,786,646), linecolor='90%gray', linewidth=2, fillcolor='whitesmoke')
@@ -164,9 +178,9 @@ def setup_animation_window(trafficEnv, env):
     # Animation setup for Light B.
     sim.AnimateText(text="Light B", x=10, y=450, textcolor='20%gray', fontsize=20)
     sim.AnimateRectangle(spec=(10, 280, 70, 440), fillcolor='black')
-    sim.AnimateCircle(radius=20, x=40, y=410, fillcolor=lambda: check_light_state(trafficEnv.lightList[1], 'red'))
-    sim.AnimateCircle(radius=20, x=40, y=360, fillcolor=lambda: check_light_state(trafficEnv.lightList[1], 'amber'))
-    sim.AnimateCircle(radius=20, x=40, y=310, fillcolor=lambda: check_light_state(trafficEnv.lightList[1], 'green'))
+    sim.AnimateCircle(radius=20, x=40, y=410, fillcolor=lambda: check_light_state(trafficEnv.lightList[1], 'red', False))
+    sim.AnimateCircle(radius=20, x=40, y=360, fillcolor=lambda: check_light_state(trafficEnv.lightList[1], 'amber', False))
+    sim.AnimateCircle(radius=20, x=40, y=310, fillcolor=lambda: check_light_state(trafficEnv.lightList[1], 'green', False))
     sim.AnimateRectangle(spec=(83,400,786,464), linecolor='90%gray', linewidth=2, fillcolor='whitesmoke')
     sim.AnimateQueue(trafficEnv.lightList[1].vehiclesQueue, x=110, y=424, title='Queue', direction='e', max_length=14)
     sim.AnimateRectangle(spec=(83,275,786,396), linecolor='90%gray', linewidth=2, fillcolor='whitesmoke')
@@ -180,7 +194,7 @@ def setup_animation_window(trafficEnv, env):
 
 def run_simulation(resData):
     env = sim.Environment(trace=False, random_seed=time.time())
-    env.animation_parameters(speed=10)
+    env.animation_parameters(speed=3)
     trafficEnv = TrafficEnvironment(resData, resData['optimalGreenTime'])
     setup_animation_window(trafficEnv, env)
     env.run(5000)
