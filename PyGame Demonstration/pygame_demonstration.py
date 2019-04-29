@@ -104,7 +104,8 @@ class TrafficLight(pygame.sprite.DirtySprite):
             self.rect = self.rect.move(48, 304)
         elif self.direction == "southbound":
             self.rect = self.rect.move(96, 224)
-        self.text_surf = self.font.render(str(len(self.env.vehicles[self.direction])), 1, (255, 255, 255, 255), self.current_colour+(0,))
+        # self.text_surf = self.font.render(str(len(self.env.vehicles[self.direction])), 1, (255, 255, 255, 255), self.current_colour+(0,))
+        self.text_surf = self.font.render(str(self.frame), 1, (255, 255, 255, 255), self.current_colour+(0,))
         self.text_w, self.text_h = self.text_surf.get_width(), self.text_surf.get_height()
         self.image.blit(self.text_surf, [8 - self.text_w/2, 8 - self.text_h/2])
         # self.text_surf = self.font.render(str(self.frame), 1, (255, 255, 255, 255), self.current_colour+(0,))
@@ -196,7 +197,7 @@ class Vehicle(pygame.sprite.DirtySprite):
                 pass
 
             if self.rect.y == 320 and self.env.traffic_lights["northbound"][0].current_colour in [(0, 255, 0)]:
-                self.rect.move_ip(16, -4)
+                self.rect.move_ip(16, -2)
                 self.env.remove_vehicle(self.direction)
                 self.stopped = False
             elif self.rect.y == 320:
@@ -208,11 +209,11 @@ class Vehicle(pygame.sprite.DirtySprite):
 
             if self.rect.y > 320:
                 if not self.stopped:
-                    self.rect.move_ip(0, -4)
+                    self.rect.move_ip(0, -2)
                     self.stopped = False
 
             if self.rect.y < 320 and not self.stopped:
-                self.rect.move_ip(0, -4)
+                self.rect.move_ip(0, -2)
                 self.stopped = False
 
             self.dirty = 1
@@ -231,16 +232,16 @@ class Vehicle(pygame.sprite.DirtySprite):
             if self.rect.y == 208 and self.env.traffic_lights["southbound"][0].current_colour in [(0, 255, 0)]:
                 self.stopped = False
                 self.env.remove_vehicle(self.direction)
-                self.rect.move_ip(0, 4)
+                self.rect.move_ip(0, 2)
             elif self.rect.y == 208:
                 self.stopped = True
 
             if self.rect.y < 208 and not self.stopped:
-                self.rect.move_ip(0, 4)
+                self.rect.move_ip(0, 2)
                 self.stopped = False
 
             if self.rect.y > 208:
-                self.rect.move_ip(0, 4)
+                self.rect.move_ip(0, 2)
                 self.stopped = False
 
             self.dirty = 1
@@ -270,6 +271,7 @@ class SimulationGame:
         self.env.add_traffic_light(self.southbound_light, "southbound")
 
         self.secure_random = random.SystemRandom()
+        self.font = pygame.font.SysFont("Arial", 18, bold=True)
 
     def run(self):
         self.surface.fill((100, 230, 100))
@@ -277,28 +279,45 @@ class SimulationGame:
 
         can_spawn_northbound = 0
         can_spawn_southbound = 0
+        spawn_northbound_chance = 0.0
+        spawn_southbound_chance = 0.0
 
         while self.running:
-            self.clock.tick(30)
+            self.clock.tick(60)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_q:
+                    # print(event.key, pygame.K_a)
+                    if event.key == pygame.K_ESCAPE:
                         self.running = False
-                    elif event.key == pygame.K_SPACE:
+                    if event.key == pygame.K_SPACE:
                         self.env.current_viewmode = next(self.env.viewmodes)
+                    if event.key == pygame.K_q:
+                        if spawn_northbound_chance < 1:
+                            spawn_northbound_chance += 0.005
+                    if event.key == pygame.K_a:
+                        if spawn_northbound_chance > 0:
+                            spawn_northbound_chance -= 0.005
+                            # print(spawn_northbound_chance)
+                    if event.key == pygame.K_w:
+                        if spawn_southbound_chance < 1:
+                            spawn_southbound_chance += 0.005
+                    if event.key == pygame.K_s:
+                        if spawn_southbound_chance > 0:
+                            spawn_southbound_chance -= 0.005
+                            
 
             if random.choice(["northbound", "southbound"]) == "northbound":
-                if random.random() < 0.120 and can_spawn_northbound == 0:
+                if random.random() < spawn_northbound_chance and can_spawn_northbound == 0:
                     vehicle = Vehicle(self.env, self.vehicle_group,
                                       self.secure_random.random(), "northbound")
                     self.vehicle_group.add(vehicle)
                     self.env.add_vehicle(vehicle, "northbound")
                     can_spawn_northbound = 16
             else:
-                if random.random() < 0.060 and can_spawn_southbound == 0 and len(self.env.vehicles["southbound"]) <= 13:
+                if random.random() < spawn_southbound_chance and can_spawn_southbound == 0 and len(self.env.vehicles["southbound"]) <= 13:
                     vehicle = Vehicle(self.env, self.vehicle_group,
                                       self.secure_random.random(), "southbound")
                     self.vehicle_group.add(vehicle)
@@ -314,6 +333,11 @@ class SimulationGame:
             self.vehicle_group.update()
             self.traffic_light_group.update()
 
+            self.surface.fill((100, 230, 100))
+            textsurface = self.font.render('(W+, S-) Southbound Busyness: '+str(round(spawn_southbound_chance, 4)), False, (255, 55, 55))
+            self.surface.blit(textsurface, (110, 0))
+            textsurface = self.font.render('(Q+, A-) Northbound Busyness: '+str(round(spawn_northbound_chance, 4)), False, (255, 55, 55))
+            self.surface.blit(textsurface, (110, 490))
             pygame.draw.rect(self.surface, (20, 20, 20), [64, 0, 32, 512])
             pygame.draw.rect(self.surface, (120, 120, 20), [64, 240, 16, 64])
             self.vehicle_group.draw(self.surface)
