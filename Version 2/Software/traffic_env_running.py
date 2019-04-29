@@ -1,20 +1,29 @@
 import salabim as sim
 import time
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib import pyplot as plt
 from scipy.interpolate import make_interp_spline, BSpline
 import random
 import numpy as np
 import uuid
 import os
 import pickle
-import pigpio
 import time
+from sys import platform as _platform
 
-controller = pigpio.pi()
+if 'debian' in _platform:
+    runningOnPi = True
+    os.system('sudo pigpiod')
+    import pigpio
+    controller = pigpio.pi()
+else:
+    runningOnPi = False
 
-red = controller.set_PWM_dutycycle(17,0)
-amber = controller.set_PWM_dutycycle(27,0)
-greeen = controller.set_PWM_dutycycle(22,0)
+if runningOnPi:
+    red = controller.set_PWM_dutycycle(17,0)
+    amber = controller.set_PWM_dutycycle(27,0)
+    greeen = controller.set_PWM_dutycycle(22,0)
 
 CWD = os.path.dirname(os.path.realpath(__file__))
 
@@ -121,7 +130,7 @@ class Vehicle(sim.Component):
                 self.roadBetween.vehiclesInBetweenBool.set(True)
                 self.atLight.vehiclesQueue.remove(self)
                 self.movedState.set()
-                yield self.hold(self.trafficEnv.timeLtoL)
+                yield self.hold(self.trafficEnv.timeLtoLSafety)
                 self.roadBetween.vehiclesQueue.remove(self)
                 if len(self.roadBetween.vehiclesQueue) == 0:
                     self.roadBetween.vehiclesInBetweenBool.set(False)
@@ -142,16 +151,18 @@ def check_light_state(light, state, updateRealLight):
     if light.state.value() == state:
         for stateDict in STATE_COLOURS_DICT["states"]:
             if stateDict["state"] == state:
-                if updateRealLight:
-                    for pin in stateDict["pin"]:
-                        controller.set_PWM_dutycycle(pin,255)
+                if runningOnPi:
+                    if updateRealLight:
+                        for pin in stateDict["pin"]:
+                            controller.set_PWM_dutycycle(pin,255)
                 return stateDict["rgb"]+tuple([255])
     else:
         for stateDict in STATE_COLOURS_DICT["states"]:
             if stateDict["state"] == state:
-                if updateRealLight:
-                    for pin in stateDict["pin"]:
-                        controller.set_PWM_dutycycle(pin,0)
+                if runningOnPi:
+                    if updateRealLight:
+                        for pin in stateDict["pin"]:
+                            controller.set_PWM_dutycycle(pin,0)
                 return stateDict["rgb"]+tuple([60])
 
 def setup_animation_window(trafficEnv, env):

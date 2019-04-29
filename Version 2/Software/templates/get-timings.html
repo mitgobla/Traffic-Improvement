@@ -224,7 +224,28 @@
                             greenStepRangeOutput.innerHTML = greenStepRange.value + ' seconds';
                         </script>
                     </div>
+                    <div class="input-group mb-3">
+                        <div class='input-group-prepend'>
+                            <span class='input-group-text' id='iterationsAddon'>Iterations per Setting</span>
+                        </div>
+                        <div class='form-control'>
+                            <input type="range" value="5" min="1" max="50" class='form-control-range' id='iterationsRange'
+                                name='iterationsRange' aria-describedby='iterationsAddon'>
+                        </div>
+                        <div class='input-group-append'>
+                            <span class="input-group-text" id='iterationsOutput'></span>
+                        </div>
+                        <script>
+                            var iterationsRange = document.getElementById("iterationsRange")
+                            var iterationsOutput = document.getElementById("iterationsOutput")
 
+                            iterationsRange.oninput = function () {
+                                iterationsOutput.innerHTML = this.value + ' iterations';
+                            }
+                            iterationsRange.value = 5
+                            iterationsOutput.innerHTML = iterationsRange.value + ' iterations';
+                        </script>
+                    </div>
                 </div>
             </div>
             <div class="card mb-3">
@@ -233,7 +254,8 @@
                         <div class="row">
                             <div class="col"></div>
                             <div class="col">
-                                <button type="submit" class="btn btn-outline-secondary">Submit to Optimise Timings</button>
+                                <button type="submit" class="btn btn-outline-secondary">Submit to Optimise
+                                    Timings</button>
                             </div>
                             <div class="col"></div>
                         </div>

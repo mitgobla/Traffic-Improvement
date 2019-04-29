@@ -1,6 +1,8 @@
 import salabim as sim
 import time
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib import pyplot as plt
 from scipy.interpolate import make_interp_spline, BSpline
 import random
 import numpy as np
@@ -12,7 +14,6 @@ CWD = os.path.dirname(os.path.realpath(__file__))
 
 VIEWPORT_RESOLUTION = [2560,1600]
 PERCENTAGE_TIME_SAFETY_ADDITION = 0.2
-STATE_COLOURS_DICT = {"states":[{"state":"red", "rgb":(255,0,0)},{"state":"redamber","rgb":(255,191,0)},{"state":"green", "rgb":(0,255,0)},{"state":"amber","rgb":(255,191,0)}]}
 
 class VehicleSpawner(sim.Component):
     def setup(self, trafficEnv):
@@ -113,7 +114,7 @@ class Vehicle(sim.Component):
                 self.roadBetween.vehiclesInBetweenBool.set(True)
                 self.atLight.vehiclesQueue.remove(self)
                 self.movedState.set()
-                yield self.hold(self.trafficEnv.timeLtoL)
+                yield self.hold(self.trafficEnv.timeLtoLSafety)
                 self.roadBetween.vehiclesQueue.remove(self)
                 if len(self.roadBetween.vehiclesQueue) == 0:
                     self.roadBetween.vehiclesInBetweenBool.set(False)
@@ -156,13 +157,13 @@ def run_optimisation(envData, optData):
     plt.plot(x, y, color='g')
     plt.xlabel('Light Green Time')
     plt.ylabel('Average Waiting Time')
-    pltFileName = str(uuid.uuid4().hex) + '.png'
+    pltFileName = str(time.time()) + '.png'
 
     resData = envData
     resData['optimalGreenTime'] = float(xmin)
     resData['averageWaitingTime'] = float(ymin)
     resData['graphFileName'] = pltFileName
-    with open(os.path.join(CWD, 'static', 'images', 'graphImages', pltFileName), 'wb') as tempPltImgFile:
+    with open(os.path.join(CWD, 'static', 'images', 'graphImages', pltFileName), 'wb+') as tempPltImgFile:
         plt.savefig(tempPltImgFile)
-    with open(os.path.join(CWD, 'TempData', 'optimisationResults.pkl'), 'wb') as tempDataFile:
+    with open(os.path.join(CWD, 'TempData', 'optimisationResults.pkl'), 'wb+s') as tempDataFile:
         pickle.dump(resData, tempDataFile, pickle.HIGHEST_PROTOCOL)

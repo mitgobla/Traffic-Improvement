@@ -47,6 +47,7 @@ class GetTimingsView(FlaskView):
         self.envTime = float(request.form["envTime"])
         self.greenTimeRange = [float(request.form.getlist('greenTimeRange')[0]), float(request.form.getlist('greenTimeRange')[1])]
         self.greenTimeStep = float(request.form["greenTimeStep"])
+        self.iterations = int(request.form['iterationsRange'])
 
         self.environmentData = {'lightDistance':self.lightDistance,
                                 'speed':self.speed,
@@ -58,7 +59,7 @@ class GetTimingsView(FlaskView):
         self.optimisationData = {'envTime':self.envTime,
                                 'lightGreenTimeRange':self.greenTimeRange,
                                 'lightGreenTimeStep':self.greenTimeStep,
-                                'iterationsPerSetting':5}
+                                'iterationsPerSetting':self.iterations}
 
         self.simulationThread = OptimisationThread(self.environmentData, self.optimisationData)
         self.simulationThread.name = "optThread"
