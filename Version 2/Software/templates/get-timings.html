@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Traffic Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="../static/main.css">
+    <script src="../static/main.js"></script>
+    <script src="../static/scripts/multirange.js"></script>
+    <link rel="stylesheet" href="../static/styling/multirange.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container-fluid mt-4 text-center">
+        <img src="../static/images/Main Logo.png" style="max-width: 20%">
+        <h3 style="display: inline-block">Get Traffic Light Timings</h3>
+    </div>
+
+    <div class='container-fluid'>
+        <form method="POST" action="/get-timings/submit">
+            <h4>Environment Settings</h4>
+            <div class='card mb-3'>
+                <div class='card-body'>
+                    <h5 class='card-title'>General settings</h5>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="distanceAddon">Distance Between Lights</span>
+                        </div>
+                        <div class="form-control">
+                            <input type="range" class="form-control-range" id="distanceBetweenLightsRange"
+                                name="distanceBetweenLightsRange" aria-describedby="distanceAddon" min=5 max=200>
+                        </div>
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="distanceOutput"></span>
+                        </div>
+                        <script>
+                            var distanceSlider = document.getElementById("distanceBetweenLightsRange")
+                            var distanceOutput = document.getElementById("distanceOutput")
+
+                            distanceSlider.oninput = function () {
+                                distanceOutput.innerHTML = this.value + ' metres';
+                            }
+                            distanceSlider.value = 30;
+                            distanceOutput.innerHTML = distanceSlider.value + ' metres';
+                        </script>
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="speedAddon">Vehicle Speed Between Lights</span>
+                        </div>
+                        <div class="form-control">
+                            <input type="range" class="form-control-range" id="speedRange" name="speedRange"
+                                aria-describedby="speedAddon" min=5 max=60>
+                        </div>
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="speedOutput"></span>
+                        </div>
+                        <script>
+                            var speedSlider = document.getElementById("speedRange")
+                            var speedOutput = document.getElementById("speedOutput")
+
+                            speedSlider.oninput = function () {
+                                speedOutput.innerHTML = this.value + ' mph';
+                            }
+                            speedSlider.value = 20;
+                            speedOutput.innerHTML = speedSlider.value + ' mph';
+                        </script>
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="queueTimeAddon">Time to Move Up Queue</span>
+                        </div>
+                        <div class="form-control">
+                            <input type="range" class="form-control-range" id="queueTimeRange" name="queueTimeRange"
+                                aria-describedby="queueTimeAddon" min=1 max=5>
+                        </div>
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="queueTimeOutput"></span>
+                        </div>
+                        <script>
+                            var queueTimeSlider = document.getElementById("queueTimeRange")
+                            var queueTimeOutput = document.getElementById("queueTimeOutput")
+
+                            queueTimeSlider.oninput = function () {
+                                queueTimeOutput.innerHTML = this.value + ' seconds';
+                            }
+                            queueTimeSlider.value = 2;
+                            queueTimeOutput.innerHTML = queueTimeSlider.value + ' seconds';
+                        </script>
+                    </div>
+                </div>
+            </div>
+            <div class='card mb-3'>
+                <div class='card-body'>
+                    <h5 class='card-title'>Traffic Light 1</h5>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="busyness1Addon">Busyness</span>
+                        </div>
+                        <div class="form-control">
+                            <input type="range" class="form-control-range" id="busyness1Range" name="busyness1Range"
+                                aria-describedby="busyness1Addon" min=0.05 max=1 step=0.05>
+                        </div>
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="busyness1Output"></span>
+                        </div>
+                        <script>
+                            var busyness1Slider = document.getElementById("busyness1Range")
+                            var busyness1Output = document.getElementById("busyness1Output")
+
+                            busyness1Slider.oninput = function () {
+                                busyness1Output.innerHTML = this.value + ' /second';
+                            }
+                            busyness1Slider.value = 0.2;
+                            busyness1Output.innerHTML = busyness1Slider.value + ' /second';
+                        </script>
+                    </div>
+                    <div class="input-group mb-3" style='max-width: 200px;'>
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="sensor1CheckAddon">Sensor On Light</span>
+                        </div>
+                        <div class="form-control">
+                            <input type="checkbox" id="sensor1Check" name="sensor1Check"
+                                aria-describedby="sensor1CheckAddon">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class='card mb-3'>
+                <div class='card-body'>
+                    <h5 class='card-title'>Traffic Light 2</h5>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="busyness2Addon">Busyness</span>
+                        </div>
+                        <div class="form-control">
+                            <input type="range" class="form-control-range" id="busyness2Range" name="busyness2Range"
+                                aria-describedby="busyness2Addon" min=0.05 max=1 step=0.05>
+                        </div>
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="busyness2Output"></span>
+                        </div>
+                        <script>
+                            var busyness2Slider = document.getElementById("busyness2Range")
+                            var busyness2Output = document.getElementById("busyness2Output")
+
+                            busyness2Slider.oninput = function () {
+                                busyness2Output.innerHTML = this.value + ' /second';
+                            }
+                            busyness2Slider.value = 0.2;
+                            busyness2Output.innerHTML = busyness2Slider.value + ' /second';
+                        </script>
+                    </div>
+                    <div class="input-group mb-3" style='max-width: 200px;'>
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="sensor2CheckAddon">Sensor On Light</span>
+                        </div>
+                        <div class="form-control">
+                            <input type="checkbox" id="sensor2Check" name="sensor2Check"
+                                aria-describedby="sensor2CheckAddon">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <h4>Optimisation Settings</h4>
+            <div class='card mb-3'>
+                <div class='card-body'>
+                    <div class="input-group mb-3">
+                        <div class='input-group-prepend'>
+                            <span class='input-group-text' id='envTimeAddon'>Simulation Iteration Time</span>
+                        </div>
+                        <div class='form-control'>
+                            <input type="number" class='form-control-number' value=5000 id='envTime' name='envTime'
+                                aria-describedby='envTimeAddon'>
+                        </div>
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class='input-group-prepend'>
+                            <span class='input-group-text' id='greenTimeRangeAddon'>Time Green Range (seconds)</span>
+                        </div>
+                        <div class='form-control'>
+                            <input type="range" multiple value="10,80" min="5" max="120" class='form-control-range'
+                                id='greenTimeRange' name='greenTimeRange' aria-describedby='greenTimeRangeAddon'>
+                        </div>
+                        <div class='input-group-append'>
+                            <span class="input-group-text" id='greenTimeRangeOutput'></span>
+                        </div>
+                        <script>
+                            var greenTimeRange = document.getElementById("greenTimeRange")
+                            var greenTimeRangeOutput = document.getElementById("greenTimeRangeOutput")
+
+                            greenTimeRange.oninput = function () {
+                                greenTimeRangeOutput.innerHTML = this.value;
+                            }
+                            greenTimeRange.values = [10, 80]
+                            greenTimeRangeOutput.innerHTML = greenTimeRange.values;
+                        </script>
+
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class='input-group-prepend'>
+                            <span class='input-group-text' id='greenTimeStepAddon'>Time Green Step</span>
+                        </div>
+                        <div class='form-control'>
+                            <input type="range" value="5" min="1" max="50" class='form-control-range' id='greenTimeStep'
+                                name='greenTimeStep' aria-describedby='greenTimeStepAddon'>
+                        </div>
+                        <div class='input-group-append'>
+                            <span class="input-group-text" id='greenTimeStepOutput'></span>
+                        </div>
+                        <script>
+                            var greenStepRange = document.getElementById("greenTimeStep")
+                            var greenStepRangeOutput = document.getElementById("greenTimeStepOutput")
+
+                            greenStepRange.oninput = function () {
+                                greenStepRangeOutput.innerHTML = this.value + ' seconds';
+                            }
+                            greenStepRange.value = 5
+                            greenStepRangeOutput.innerHTML = greenStepRange.value + ' seconds';
+                        </script>
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class='input-group-prepend'>
+                            <span class='input-group-text' id='iterationsAddon'>Iterations per Setting</span>
+                        </div>
+                        <div class='form-control'>
+                            <input type="range" value="5" min="1" max="50" class='form-control-range' id='iterationsRange'
+                                name='iterationsRange' aria-describedby='iterationsAddon'>
+                        </div>
+                        <div class='input-group-append'>
+                            <span class="input-group-text" id='iterationsOutput'></span>
+                        </div>
+                        <script>
+                            var iterationsRange = document.getElementById("iterationsRange")
+                            var iterationsOutput = document.getElementById("iterationsOutput")
+
+                            iterationsRange.oninput = function () {
+                                iterationsOutput.innerHTML = this.value + ' iterations';
+                            }
+                            iterationsRange.value = 5
+                            iterationsOutput.innerHTML = iterationsRange.value + ' iterations';
+                        </script>
+                    </div>
+                </div>
+            </div>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col"></div>
+                            <div class="col">
+                                <button type="submit" class="btn btn-outline-secondary">Submit to Optimise
+                                    Timings</button>
+                            </div>
+                            <div class="col"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <footer class="container-fluid pt-4 pb-4">
+
+        <div class="card">
+            <div class="card-body bg-info text-light text-center">
+                <p class="card-text">Created by Edward Upton & Ben Dodd</p>
+            </div>
+        </div>
+
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>
