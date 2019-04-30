@@ -1,1 +1,8 @@
 pygame
+salabim
+matplotlib
+scipy
+numpy
+pickle
+flask
+flask-classful
