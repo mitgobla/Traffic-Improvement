@@ -1,3 +1,9 @@
+"""PyGame Demo for simulation results
+
+Author: Edward Upton (engiego)
+        Ben Dodd (mitgobla)
+"""
+
 import itertools
 import os
 import random
@@ -13,11 +19,17 @@ pygame.init()
 pygame.font.init()
 pygame.display.set_caption("Traffic Light Management Demo")
 
-SCALE = 8
+SCALE = 8 # Modify the traffic light timings
 
 class Environment:
+    """Class for the traffic environment.
+    Stores vehicles and traffic lights, and controls the current viewmode.
+    """
 
     def __init__(self):
+        """Class for the traffic environment.
+        Stores vehicles and traffic lights, and controls the current viewmode.
+        """
 
         self.viewmodes = itertools.cycle(["colours", "waiting"])
         self.current_viewmode = next(self.viewmodes)
@@ -33,26 +45,63 @@ class Environment:
         }
 
     def remove_vehicle(self, direction):
+        """Remove a vehicle from the environment.
+        
+        Arguments:
+            direction {str} -- Direction of travel of the vehicle to remove.
+        """
+
         del self.vehicles[direction][0]
-        # print(direction, ":", len(self.vehicles[direction]))
 
     def remove_last_vehicle(self, direction):
+        """Remove the last vehicle from the environment.
+        
+        Arguments:
+            direction {str} -- Direction of travel of the vehicle to remove.
+        """
+
         del self.vehicles[direction][-1]
 
     def add_vehicle(self, vehicle, direction):
+        """Add a vehicle to the environment.
+        
+        Arguments:
+            vehicle {Vehicle} -- Vehicle object to add.
+            direction {str} -- Direction of travel of the vehicle to add.
+        """
+
         data = dict(name=vehicle.name, vehicle_obj=vehicle, direction=direction, rect=vehicle.rect)
         self.vehicles[direction].append(data)
 
     def add_traffic_light(self, light, direction):
+        """Add a traffic light to the environment.
+        
+        Arguments:
+            light {TrafficLight} -- TrafficLight object to add.
+            direction {str} -- Direction of travel the TrafficLight object will control.
+        """
+
         self.traffic_lights[direction].append(light)
 
 
 
 class TrafficLight(pygame.sprite.DirtySprite):
+    """Traffic Light object & sprite.
+    
+    Arguments:
+        DirtySprite {pygame.sprite.DirtySprite} -- Parent class.
+    """
 
     def __init__(self, env: Environment, group: pygame.sprite.Group, direction: str):
-        pygame.sprite.DirtySprite.__init__(self)
+        """Traffic light object & sprite.
+        
+        Arguments:
+            env {Environment} -- Traffic Environment.
+            group {pygame.sprite.Group} -- Sprite group.
+            direction {str} -- Direction of travel this traffic light controls.
+        """
 
+        pygame.sprite.DirtySprite.__init__(self)
 
         self.env = env
         self.image = pygame.Surface([16, 16])
@@ -93,6 +142,8 @@ class TrafficLight(pygame.sprite.DirtySprite):
         self.image.blit(self.text_surf, [8 - self.text_w/2, 8 - self.text_h/2])
 
     def update(self):
+        """Update traffic light state. Automatically done by PyGame.
+        """
         self.frame += 1
         if self.frame == 15:
             self.current_colour = next(self.colours)
@@ -112,8 +163,21 @@ class TrafficLight(pygame.sprite.DirtySprite):
 
 
 class Vehicle(pygame.sprite.DirtySprite):
+    """Vehicle object & sprite.
+    
+    Arguments:
+        DirtySprite {pygame.sprite.DirtySprite} -- Parent class.
+    """
 
     def __init__(self, env: Environment, group: pygame.sprite.Group, name, direction: str):
+        """Vehicle object & sprite.
+        
+        Arguments:
+            env {Environment} -- Traffic Environment.
+            group {pygame.sprite.Group} -- Sprite group.
+            direction {str} -- Direction of travel this traffic light controls.
+        """
+
         pygame.sprite.DirtySprite.__init__(self)
 
         self.env = env
@@ -160,9 +224,16 @@ class Vehicle(pygame.sprite.DirtySprite):
         # self.image.fill(self.colour, rect=self.rect)
 
     def vehicle_property(self):
+        """Get vehicle data.
+        
+        Returns:
+            dict -- Dictionary of Vehicle sprite rectangle, name, and direction.
+        """
         return dict(rect=self.rect, name=self.name, direction=self.direction)
 
     def update(self):
+        """Update vehicle state. Automatically done by PyGame.
+        """
         self.x, self.y = self.rect.x, self.rect.y
         if self.env.current_viewmode == "waiting":
             if self.stopped and self.frame < 253:
@@ -185,6 +256,8 @@ class Vehicle(pygame.sprite.DirtySprite):
             self.dirty = 1
 
     def move(self):
+        """Intelligently move the vehicle based on its direction of travel.
+        """
         if self.direction == "northbound":
 
             try:
@@ -248,8 +321,13 @@ class Vehicle(pygame.sprite.DirtySprite):
 
 
 class SimulationGame:
+    """Game Class
+    """
 
     def __init__(self):
+        """Game class.
+        Initialize game environment variables.
+        """
         self.surface = pygame.display.set_mode([512, 512])
         self.running = True
 
@@ -274,6 +352,8 @@ class SimulationGame:
         self.font = pygame.font.SysFont("Arial", 18, bold=True)
 
     def run(self):
+        """PyGame mainloop.
+        """
         self.surface.fill((100, 230, 100))
         pygame.display.flip()
 
