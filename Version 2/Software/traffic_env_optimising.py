@@ -1,3 +1,9 @@
+"""Traffic Environment Simulation code.
+
+Author: Edward Upton (engiego)
+        Ben Dodd (mitgobla)
+"""
+
 import salabim as sim
 import time
 import matplotlib
@@ -16,10 +22,12 @@ VIEWPORT_RESOLUTION = [2560,1600]
 PERCENTAGE_TIME_SAFETY_ADDITION = 0.2
 
 class VehicleSpawner(sim.Component):
+
     def setup(self, trafficEnv):
         self.trafficEnv = trafficEnv
         self.lightList = trafficEnv.lightList
         self.randomUniform = sim.Uniform(0,1)
+
     def process(self):
         while True:
             for light in self.lightList:
@@ -27,7 +35,9 @@ class VehicleSpawner(sim.Component):
                     Vehicle(light=light, trafficEnv=self.trafficEnv)
             yield self.hold(1)
 
+
 class TrafficManagement(sim.Component):
+
     def setup(self, trafficEnv):
         self.trafficEnv = trafficEnv
         self.lightList = trafficEnv.lightList
@@ -48,6 +58,7 @@ class TrafficManagement(sim.Component):
 
 
 class TrafficEnvironment():
+
     def __init__(self, envData, timeLightGreen):
         self.lightList = []
         for lightNum in range(2):
@@ -65,6 +76,7 @@ class TrafficEnvironment():
 
 
 class RoadBetween(sim.Component):
+
     def setup(self):
         self.vehiclesInBetweenBool = sim.State(
             self.name() + ".vehiclesPresentState", value=False)
@@ -73,6 +85,7 @@ class RoadBetween(sim.Component):
 
 
 class Light(sim.Component):
+
     def setup(self, sensitivity, busyness):
         self.state = sim.State((self.name() + ".state"), value="red")
         self.vehiclesQueue = sim.Queue(self.name() + ".queue")
@@ -98,6 +111,7 @@ class Light(sim.Component):
 
 
 class Vehicle(sim.Component):
+    
     def setup(self, light, trafficEnv):
         self.trafficEnv = trafficEnv
         self.roadBetween = trafficEnv.roadBetween
