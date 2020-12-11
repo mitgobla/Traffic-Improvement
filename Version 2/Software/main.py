@@ -92,7 +92,7 @@ class SimulationView(FlaskView):
         with open(os.path.join(CWD, 'TempData', 'optimisationResults.pkl'), 'rb') as tempData:
             optResults = pickle.load(tempData)
         self.simThread = SimulationThread(optResults)
-        self.simThread.start()
+        self.simThread.run()
         return render_template('simulation.html')
 
 class OptimisationThread(threading.Thread):
@@ -103,9 +103,8 @@ class OptimisationThread(threading.Thread):
     def run(self):
         traffic_env_optimising.run_optimisation(self.envData, self.optData)
 
-class SimulationThread(threading.Thread):
+class SimulationThread():
     def __init__(self, resData):
-        threading.Thread.__init__(self)
         self.resData = resData
     
     def run(self):
@@ -116,4 +115,4 @@ GetTimingsView.register(app)
 SimulationView.register(app)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, debug=debug)
+    app.run(host='0.0.0.0', port=80, debug=False)

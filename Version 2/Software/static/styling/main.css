@@ -1,0 +1,29 @@
+.sf-main-header {
+    grid-area: sf-main-header-cell;
+}
+
+.sf-filters {
+    grid-area: sf-filters-cell;
+}
+
+.sf-subject-list {
+    grid-area: sf-subject-list-cell;
+}
+
+.wrapper {
+    display: grid;
+    grid-gap: 20px;
+    grid-template-areas: 
+        "sf-main-header-cell"
+        "sf-filters-cell"
+        "sf-subject-list-cell";
+}
+
+@media (min-width: 30rem) {
+    .wrapper {
+        grid-template-columns: 1fr 3fr;
+        grid-template-areas: 
+            "sf-main-header-cell sf-main-header-cell"
+            "sf-filters-cell sf-subject-list-cell";
+    }
+}

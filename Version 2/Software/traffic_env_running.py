@@ -1,9 +1,5 @@
 import salabim as sim
 import time
-import matplotlib
-matplotlib.use("TkAgg")
-from matplotlib import pyplot as plt
-from scipy.interpolate import make_interp_spline, BSpline
 import random
 import numpy as np
 import uuid
@@ -115,6 +111,7 @@ class Light(sim.Component):
 
 class Vehicle(sim.Component):
     def setup(self, light, trafficEnv):
+        print('car created')
         self.trafficEnv = trafficEnv
         self.roadBetween = trafficEnv.roadBetween
         self.atLight = light
@@ -166,7 +163,7 @@ def check_light_state(light, state, updateRealLight):
                 return stateDict["rgb"]+tuple([60])
 
 def setup_animation_window(trafficEnv, env):
-    env.background_color('90%gray')
+    # env.background_color('90%gray')
     sim.AnimateText(text="Traffic Environment Simulation", x=10, y=728, textcolor='20%gray', fontsize=30)
 
     # Animation setup for Light A
@@ -204,8 +201,15 @@ def setup_animation_window(trafficEnv, env):
     sim.AnimateText(text=lambda: "Waiting Time Maximum: " + str(round(trafficEnv.lightList[1].vehiclesQueue.length_of_stay.maximum(), 1)), x=795, y=369, fontsize=15, textcolor='20%gray')
 
 def run_simulation(resData):
+    print('1')
     env = sim.Environment(trace=False, random_seed=time.time())
+    env.animate(True)
+    print('2')
     env.animation_parameters(speed=3)
+    print('3')
     trafficEnv = TrafficEnvironment(resData, resData['optimalGreenTime'])
+    print('4')
     setup_animation_window(trafficEnv, env)
+    
+    print('5')
     env.run(5000)

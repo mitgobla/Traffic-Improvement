@@ -157,7 +157,7 @@ def run_optimisation(envData, optData):
     plt.plot(x, y, color='g')
     plt.xlabel('Light Green Time')
     plt.ylabel('Average Waiting Time')
-    pltFileName = str(time.time()) + '.png'
+    pltFileName = 'graph.png'
 
     resData = envData
     resData['optimalGreenTime'] = float(xmin)
@@ -165,5 +165,5 @@ def run_optimisation(envData, optData):
     resData['graphFileName'] = pltFileName
     with open(os.path.join(CWD, 'static', 'images', 'graphImages', pltFileName), 'wb+') as tempPltImgFile:
         plt.savefig(tempPltImgFile)
-    with open(os.path.join(CWD, 'TempData', 'optimisationResults.pkl'), 'wb+s') as tempDataFile:
+    with open(os.path.join(CWD, 'TempData', 'optimisationResults.pkl'), 'wb+') as tempDataFile:
         pickle.dump(resData, tempDataFile, pickle.HIGHEST_PROTOCOL)
